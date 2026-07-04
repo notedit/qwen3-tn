@@ -1,0 +1,273 @@
+<title>Qwen3-0.6B TN 模型对比报告</title>
+<style>
+:root{
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e;
+  --muted:#898781; --grid:#e1e0d9; --baseline:#c3c2b7;
+  --ring:rgba(11,11,11,.10); --good:#006300; --bad:#d03b3b;
+  --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100;
+}
+@media (prefers-color-scheme: dark){:root{
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7;
+  --muted:#898781; --grid:#2c2c2a; --baseline:#383835;
+  --ring:rgba(255,255,255,.10); --good:#0ca30c; --bad:#e66767;
+  --s1:#3987e5; --s2:#199e70; --s3:#c98500;
+}}
+:root[data-theme="light"]{
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e;
+  --muted:#898781; --grid:#e1e0d9; --baseline:#c3c2b7;
+  --ring:rgba(11,11,11,.10); --good:#006300; --bad:#d03b3b;
+  --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100;
+}
+:root[data-theme="dark"]{
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7;
+  --muted:#898781; --grid:#2c2c2a; --baseline:#383835;
+  --ring:rgba(255,255,255,.10); --good:#0ca30c; --bad:#e66767;
+  --s1:#3987e5; --s2:#199e70; --s3:#c98500;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);
+  font:15px/1.65 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px}
+header h1{font-size:26px;line-height:1.3;margin:0 0 6px;text-wrap:balance}
+header .sub{color:var(--ink2);margin:0 0 14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+.chip{font-size:12.5px;color:var(--ink2);background:var(--surface);
+  border:1px solid var(--ring);border-radius:999px;padding:3px 12px}
+section{margin-top:36px}
+h2{font-size:17px;margin:0 0 4px}
+.note{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:20px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:16px 18px}
+.tile .k{font-size:12px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.tile .v{font-size:30px;font-weight:650;margin:2px 0}
+.tile .d{font-size:12.5px;color:var(--ink2)}
+.tile .d b.up{color:var(--good)} .tile .d b.down{color:var(--bad)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 16px;font-size:13px;color:var(--ink2)}
+.legend .sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.grp{margin-bottom:18px}
+.grp:last-child{margin-bottom:0}
+.grp .glabel{font-size:13.5px;margin-bottom:5px;display:flex;justify-content:space-between;color:var(--ink)}
+.grp .glabel .warn{color:var(--bad);font-size:12px}
+.bars{display:flex;flex-direction:column;gap:2px}
+.brow{display:flex;align-items:center;gap:8px}
+.btrack{flex:1;position:relative;height:14px;background:transparent}
+.bar{position:absolute;left:0;top:0;height:14px;border-radius:0 4px 4px 0;min-width:2px}
+.bval{width:64px;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;text-align:right;flex:none}
+.bwho{width:14px;flex:none;font-size:11px;color:var(--muted)}
+.axis{border-top:1px solid var(--baseline);margin-top:12px;padding-top:4px;
+  display:flex;justify-content:space-between;font-size:11px;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:12px;color:var(--muted);text-align:right;font-weight:600;
+  border-bottom:1px solid var(--baseline);padding:6px 10px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px 10px;border-bottom:1px solid var(--grid);text-align:right;
+  font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+td .flag{color:var(--bad)}
+.best{font-weight:650}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--ink2);font-size:13.5px}
+summary:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.bc{border-left:2px solid var(--grid);padding:8px 0 8px 14px;margin:10px 0}
+.bc .src{margin-bottom:3px}
+.bc .row{font-size:13px;color:var(--ink2)}
+.bc code{background:var(--page);border:1px solid var(--ring);border-radius:4px;
+  padding:1px 5px;font-size:12.5px}
+.scroll{overflow-x:auto}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--page);
+  font-size:12.5px;padding:5px 10px;border-radius:6px;opacity:0;transition:opacity .12s;
+  z-index:9;max-width:320px}
+@media (prefers-reduced-motion: reduce){#tip{transition:none}}
+footer{margin-top:44px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--grid);padding-top:14px}
+footer ul{margin:6px 0 0;padding-left:18px}
+</style>
+<div class="wrap">
+<header>
+  <h1>Qwen3-0.6B Span-Edit TN:三模型盲测对比</h1>
+  <p class="sub" id="sub"></p>
+  <div class="chips" id="chips"></div>
+</header>
+
+<section>
+  <h2>SFT v1 关键指标</h2>
+  <p class="note">括号内为相对 SFT v0 的变化;acceptable 口径 = 读法属 verbalizer 合法变体集合(幺/一、两/二 等)即算对</p>
+  <div class="tiles" id="tiles"></div>
+</section>
+
+<section>
+  <h2>核心质量指标(越高越好)</h2>
+  <p class="note" id="legend-note"></p>
+  <div class="legend" id="legend1"></div>
+  <div class="card" id="chartUp"></div>
+</section>
+
+<section>
+  <h2>风险指标(越低越好)</h2>
+  <p class="note">P0 红线:数字错读;解析失败走 WFST fallback,过度触发伤听感</p>
+  <div class="card" id="chartDown"></div>
+</section>
+
+<section>
+  <h2>按 semiotic class 分桶(句准率,exact 口径)</h2>
+  <p class="note">⚠ = SFT v1 桶准确率低于 95% 出口线</p>
+  <div class="card" id="chartCls"></div>
+</section>
+
+<section>
+  <h2>全量指标表</h2>
+  <div class="card scroll"><table id="bigtable"></table></div>
+</section>
+
+<section>
+  <h2>SFT v1 典型 badcase</h2>
+  <div class="card" id="bads"></div>
+</section>
+
+<footer id="foot"></footer>
+</div>
+<div id="tip" role="presentation"></div>
+
+<script>
+const D = {"meta": {"blind_n": 2386, "date": "2026-07-04"}, "models": [{"label": "零样本 Base", "train": "无微调(对照下界)", "r": {"model": "Qwen/Qwen3-0.6B-Base", "data": "data/blind_v0.jsonl", "n": 2386, "sentence_acc": 0.00041911148365465214, "sentence_acc_acceptable": 0.00041911148365465214, "parse_fail": 0.9979044425817267, "span_p": 0.0, "span_r": 0.0, "span_r_acceptable": 0.0, "digit_misread": 0.0, "digit_misread_acceptable": 0.0, "digit_total": 3, "overtrigger_per_sent": 0.0, "gen_tokens_mean": 171.9446772841576, "gen_tokens_p99": 203, "eval_seconds": 282.0, "buckets": {"class:DATE": {"acc": 0.0, "n": 314}, "class:FRACTION": {"acc": 0.0, "n": 64}, "class:MEASURE": {"acc": 0.0, "n": 200}, "class:MONEY": {"acc": 0.0, "n": 264}, "class:NEG": {"acc": 0.0013054830287206266, "n": 766}, "class:NUMBER": {"acc": 0.0, "n": 321}, "class:PERCENT": {"acc": 0.0, "n": 133}, "class:PHONE": {"acc": 0.0, "n": 184}, "class:RANGE": {"acc": 0.0, "n": 99}, "class:SCORE": {"acc": 0.0, "n": 122}, "class:SERIAL": {"acc": 0.0, "n": 52}, "class:TIME": {"acc": 0.0, "n": 271}, "class:VERSION": {"acc": 0.0, "n": 77}, "domain:客服对话": {"acc": 0.0022026431718061676, "n": 454}, "domain:小说叙述": {"acc": 0.0, "n": 493}, "domain:新闻报道": {"acc": 0.0, "n": 469}, "domain:日常对话": {"acc": 0.0, "n": 481}, "domain:社交媒体帖子": {"acc": 0.0, "n": 489}, "kind:negative_hanzi_num": {"acc": 0.0, "n": 283}, "kind:negative_latin": {"acc": 0.004201680672268907, "n": 238}, "kind:negative_plain": {"acc": 0.0, "n": 245}, "kind:positive": {"acc": 0.0, "n": 1620}}}}, {"label": "SFT v0", "train": "4,320 条合成数据 × 3 epoch", "r": {"model": "runs/sft_v0/final", "data": "data/blind_v0.jsonl", "n": 2386, "sentence_acc": 0.9258172673931265, "sentence_acc_acceptable": 0.9321039396479464, "parse_fail": 0.003352891869237217, "span_p": 0.8969976905311778, "span_r": 0.9019972131908964, "span_r_acceptable": 0.9094287041337669, "digit_misread": 0.10790464240903387, "digit_misread_acceptable": 0.09661229611041405, "digit_total": 797, "overtrigger_per_sent": 0.09346186085498742, "gen_tokens_mean": 12.856244761106455, "gen_tokens_p99": 46, "eval_seconds": 87.4, "buckets": {"class:DATE": {"acc": 0.9203821656050956, "n": 314}, "class:FRACTION": {"acc": 0.890625, "n": 64}, "class:MEASURE": {"acc": 0.875, "n": 200}, "class:MONEY": {"acc": 0.8257575757575758, "n": 264}, "class:NEG": {"acc": 1.0, "n": 766}, "class:NUMBER": {"acc": 0.8161993769470405, "n": 321}, "class:PERCENT": {"acc": 0.849624060150376, "n": 133}, "class:PHONE": {"acc": 0.8858695652173914, "n": 184}, "class:RANGE": {"acc": 0.8484848484848485, "n": 99}, "class:SCORE": {"acc": 0.9098360655737705, "n": 122}, "class:SERIAL": {"acc": 0.8653846153846154, "n": 52}, "class:TIME": {"acc": 0.8929889298892989, "n": 271}, "class:VERSION": {"acc": 0.8311688311688312, "n": 77}, "domain:客服对话": {"acc": 0.9162995594713657, "n": 454}, "domain:小说叙述": {"acc": 0.9350912778904665, "n": 493}, "domain:新闻报道": {"acc": 0.9189765458422174, "n": 469}, "domain:日常对话": {"acc": 0.918918918918919, "n": 481}, "domain:社交媒体帖子": {"acc": 0.9386503067484663, "n": 489}, "kind:negative_hanzi_num": {"acc": 1.0, "n": 283}, "kind:negative_latin": {"acc": 1.0, "n": 238}, "kind:negative_plain": {"acc": 1.0, "n": 245}, "kind:positive": {"acc": 0.8907407407407407, "n": 1620}}}}, {"label": "SFT v1", "train": "51,906 条合成数据 × 3 epoch", "r": {"model": "runs/sft_v1/final", "data": "data/blind_v0.jsonl", "n": 2386, "sentence_acc": 0.9962279966471081, "sentence_acc_acceptable": 0.9962279966471081, "parse_fail": 0.0, "span_p": 0.9893813481071099, "span_r": 0.9893813481071099, "span_r_acceptable": 0.9893813481071099, "digit_misread": 0.007471980074719801, "digit_misread_acceptable": 0.007471980074719801, "digit_total": 803, "overtrigger_per_sent": 0.009639564124056999, "gen_tokens_mean": 12.792539815590947, "gen_tokens_p99": 46, "eval_seconds": 106.9, "buckets": {"class:DATE": {"acc": 1.0, "n": 314}, "class:FRACTION": {"acc": 1.0, "n": 64}, "class:MEASURE": {"acc": 1.0, "n": 200}, "class:MONEY": {"acc": 0.9886363636363636, "n": 264}, "class:NEG": {"acc": 1.0, "n": 766}, "class:NUMBER": {"acc": 0.9813084112149533, "n": 321}, "class:PERCENT": {"acc": 1.0, "n": 133}, "class:PHONE": {"acc": 0.9945652173913043, "n": 184}, "class:RANGE": {"acc": 1.0, "n": 99}, "class:SCORE": {"acc": 1.0, "n": 122}, "class:SERIAL": {"acc": 1.0, "n": 52}, "class:TIME": {"acc": 0.992619926199262, "n": 271}, "class:VERSION": {"acc": 1.0, "n": 77}, "domain:客服对话": {"acc": 0.9955947136563876, "n": 454}, "domain:小说叙述": {"acc": 0.9979716024340771, "n": 493}, "domain:新闻报道": {"acc": 0.9936034115138592, "n": 469}, "domain:日常对话": {"acc": 0.9958419958419958, "n": 481}, "domain:社交媒体帖子": {"acc": 0.9979550102249489, "n": 489}, "kind:negative_hanzi_num": {"acc": 1.0, "n": 283}, "kind:negative_latin": {"acc": 1.0, "n": 238}, "kind:negative_plain": {"acc": 1.0, "n": 245}, "kind:positive": {"acc": 0.9944444444444445, "n": 1620}}}}], "classes": ["DATE", "FRACTION", "MEASURE", "MONEY", "NUMBER", "PERCENT", "PHONE", "RANGE", "SCORE", "SERIAL", "TIME", "VERSION", "NEG"], "badcases": [{"src": "他盯着门牌上的3697，确认这就是目的地。", "gold": [["3697", "三六九七"]], "pred_raw": "3697->三千六百九十七", "err": "wrong_output"}, {"src": "公司账户显示到账1400万元。", "gold": [["1400万元", "一千四百万元"]], "pred_raw": "1400万元->一千四百万", "err": "wrong_output"}, {"src": "据报警记录，市民于当日拨打热线66332393，呼叫时间8:02:53，回拨号码010-74788488未能接通。", "gold": [["66332393", "六千六百三十三万二千三百九十三"], ["8:02:53", "八点零二分五十三秒"], ["010-74788488", "零幺零七四七八八四八八"]], "pred_raw": "66332393->六六三三二三九三\n8:02:53->八点零二分五十三秒\n010-74788488->零幺零七四七八八四八八", "err": "wrong_output"}]};
+const fmtPct = x => (x*100).toFixed(x >= 0.995 || x === 0 ? 1 : 2) + '%';
+const fmtPP = x => (x >= 0 ? '+' : '') + (x*100).toFixed(2) + ' pp';
+const COLORS = ['var(--s1)','var(--s2)','var(--s3)'];
+const tip = document.getElementById('tip');
+function hover(el, text){
+  el.addEventListener('mousemove', e => {
+    tip.textContent = text; tip.style.opacity = 1;
+    tip.style.left = Math.min(e.clientX + 14, innerWidth - 330) + 'px';
+    tip.style.top = (e.clientY + 16) + 'px';
+  });
+  el.addEventListener('mouseleave', () => tip.style.opacity = 0);
+}
+
+// header
+document.getElementById('sub').textContent =
+  `盲测集 ${D.meta.blind_n} 句(独立 seed + 独立 prompt 措辞,${D.meta.date});greedy 解码`;
+document.getElementById('chips').innerHTML = D.models.map((m,i) =>
+  `<span class="chip"><span class="sw" style="background:${COLORS[i]};display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px"></span>${m.label} — ${m.train}</span>`).join('');
+
+// tiles: v1 vs v0
+const v1 = D.models[2].r, v0 = D.models[1].r;
+const tiles = [
+  ['句准率 (acceptable)', fmtPct(v1.sentence_acc_acceptable),
+   fmtPP(v1.sentence_acc_acceptable - v0.sentence_acc_acceptable), true],
+  ['数字错读率 (acceptable)', fmtPct(v1.digit_misread_acceptable),
+   fmtPP(v1.digit_misread_acceptable - v0.digit_misread_acceptable), false],
+  ['解析失败率', fmtPct(v1.parse_fail), fmtPP(v1.parse_fail - v0.parse_fail), false],
+  ['生成 token 均值 / P99', v1.gen_tokens_mean.toFixed(1) + ' / ' + v1.gen_tokens_p99,
+   null, null],
+];
+document.getElementById('tiles').innerHTML = tiles.map(([k,v,d,upGood]) => {
+  let dh = '';
+  if (d !== null) {
+    const up = d.startsWith('+');
+    const good = (up && upGood) || (!up && !upGood);
+    dh = `<div class="d">vs v0 <b class="${good?'up':'down'}">${d}</b></div>`;
+  }
+  return `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${dh}</div>`;
+}).join('');
+
+// legend
+document.getElementById('legend1').innerHTML = D.models.map((m,i) =>
+  `<span><span class="sw" style="background:${COLORS[i]}"></span>${m.label}</span>`).join('');
+
+// grouped horizontal bars
+function chart(el, metrics, fmt, domainMax){
+  const host = document.getElementById(el);
+  host.innerHTML = metrics.map(([key, label, warnFn]) => {
+    const rows = D.models.map((m,i) => {
+      const val = m.r[key];
+      const w = Math.max(0.4, val / domainMax * 100);
+      return `<div class="brow">
+        <span class="bwho" aria-hidden="true"></span>
+        <span class="btrack"><span class="bar" data-t="${m.label}:${fmt(val)}"
+          style="width:${w}%;background:${COLORS[i]}"></span></span>
+        <span class="bval">${fmt(val)}</span></div>`;
+    }).join('');
+    const warn = warnFn && warnFn(D.models[2].r[key]) ? '<span class="warn">未达出口线</span>' : '';
+    return `<div class="grp"><div class="glabel"><span>${label}</span>${warn}</div>
+      <div class="bars">${rows}</div></div>`;
+  }).join('') + `<div class="axis"><span>0</span><span>${fmt(domainMax)}</span></div>`;
+  host.querySelectorAll('.bar').forEach(b => hover(b, b.dataset.t));
+}
+chart('chartUp', [
+  ['sentence_acc', '句准率(exact)'],
+  ['sentence_acc_acceptable', '句准率(acceptable)', v => v < 0.985],
+  ['span_p', 'Span Precision'],
+  ['span_r_acceptable', 'Span Recall(acceptable)'],
+], fmtPct, 1);
+chart('chartDown', [
+  ['digit_misread_acceptable', '数字错读率(acceptable)', v => v > 0.0005],
+  ['parse_fail', '解析失败率', v => v > 0.001],
+  ['overtrigger_per_sent', '过度触发(编辑/句)'],
+], x => (x*100).toFixed(2) + '%', Math.max(...D.models.map(m =>
+  Math.max(m.r.digit_misread_acceptable, m.r.parse_fail, m.r.overtrigger_per_sent))) * 1.12);
+
+// class buckets
+(function(){
+  const host = document.getElementById('chartCls');
+  host.innerHTML = D.classes.map(c => {
+    const rows = D.models.map((m,i) => {
+      const b = m.r.buckets['class:' + c];
+      const acc = b ? b.acc : 0;
+      return `<div class="brow"><span class="bwho"></span>
+        <span class="btrack"><span class="bar" data-t="${m.label}:${fmtPct(acc)} (n=${b?b.n:0})"
+          style="width:${Math.max(0.4, acc*100)}%;background:${COLORS[i]}"></span></span>
+        <span class="bval">${fmtPct(acc)}</span></div>`;
+    }).join('');
+    const v1b = D.models[2].r.buckets['class:' + c];
+    const warn = v1b && v1b.acc < 0.95 ? ' <span class="warn">⚠</span>' : '';
+    return `<div class="grp"><div class="glabel"><span>${c}${warn}
+      <span style="color:var(--muted);font-size:12px">n=${v1b?v1b.n:0}</span></span></div>
+      <div class="bars">${rows}</div></div>`;
+  }).join('') + '<div class="axis"><span>0</span><span>100%</span></div>';
+  host.querySelectorAll('.bar').forEach(b => hover(b, b.dataset.t));
+})();
+
+// big table
+(function(){
+  const rows = [
+    ['句准率(exact)', 'sentence_acc', fmtPct, 1],
+    ['句准率(acceptable)', 'sentence_acc_acceptable', fmtPct, 1],
+    ['Span P', 'span_p', fmtPct, 1],
+    ['Span R(exact)', 'span_r', fmtPct, 1],
+    ['Span R(acceptable)', 'span_r_acceptable', fmtPct, 1],
+    ['数字错读(exact)', 'digit_misread', fmtPct, -1],
+    ['数字错读(acceptable)', 'digit_misread_acceptable', fmtPct, -1],
+    ['解析失败', 'parse_fail', fmtPct, -1],
+    ['过度触发/句', 'overtrigger_per_sent', x => x.toFixed(3), -1],
+    ['生成 token 均值', 'gen_tokens_mean', x => x.toFixed(1), 0],
+    ['生成 token P99', 'gen_tokens_p99', x => x, 0],
+  ];
+  const head = '<tr><th>指标</th>' + D.models.map(m => `<th>${m.label}</th>`).join('') + '</tr>';
+  const body = rows.map(([label, key, fmt, dir]) => {
+    const vals = D.models.map(m => m.r[key]);
+    const best = dir === 1 ? Math.max(...vals) : dir === -1 ? Math.min(...vals) : null;
+    return `<tr><td>${label}</td>` + vals.map(v =>
+      `<td class="${best !== null && v === best ? 'best' : ''}">${fmt(v)}</td>`).join('') + '</tr>';
+  }).join('');
+  document.getElementById('bigtable').innerHTML = head + body;
+})();
+
+// badcases
+document.getElementById('bads').innerHTML = D.badcases.length === 0
+  ? '<p class="note" style="margin:0">无</p>'
+  : D.badcases.map(b => `<div class="bc">
+      <div class="src">${b.src}</div>
+      <div class="row">gold:${b.gold.map(e => `<code>${e[0]}→${e[1]}</code>`).join(' ')}</div>
+      <div class="row">pred:${b.pred_raw ? b.pred_raw.split('\n').map(l => `<code>${l}</code>`).join(' ') : '<code>(空)</code>'}${b.err && b.err.startsWith('parse') ? ` <span class="flag">${b.err}</span>` : ''}</div>
+    </div>`).join('');
+
+// footer
+document.getElementById('foot').innerHTML = `口径说明
+<ul>
+  <li>盲测集与训练数据完全隔离:独立随机 seed、独立 prompt 措辞;gold 读法全部由程序化 verbalizer 生成,LLM 只产出语境句。</li>
+  <li>acceptable 口径:预测读法落在该 NSW 的合法读法集合(如 幺/一、两/二、十/一十)即判对;exact 口径要求与 canonical 完全一致。</li>
+  <li>零样本 Base 无法遵循编辑输出协议属预期,其"句准率"几乎全部来自碰巧输出空(无编辑句)或解析失败后的偶合,仅作参照下界。</li>
+  <li>一期出口线:句准率 ≥98.5%、数字错读 ≤0.05%、解析失败 ≤0.1%、单桶 ≥95%(合成盲测口径,上线判定需人工测试集)。</li>
+</ul>`;
+</script>

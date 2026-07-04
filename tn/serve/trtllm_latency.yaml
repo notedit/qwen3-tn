@@ -1,0 +1,7 @@
+# trtllm-serve 延迟优先配置(--extra_llm_api_options 传入)
+# 依据:bs=1 低并发场景,CUDA Graph 消 host 开销,关 overlap scheduler 换首 token/单步延迟
+cuda_graph_config:
+  enable_padding: true
+  batch_sizes: [1, 2, 4, 8]
+kv_cache_config:
+  free_gpu_memory_fraction: 0.2

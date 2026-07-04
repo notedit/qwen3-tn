@@ -42,6 +42,20 @@ vllm serve <model_path> \
 | vLLM bf16 + FULL_DECODE_ONLY cudagraph | 1.65(无收益) |
 | vLLM bf16 + async-scheduling | 1.64(无收益) |
 | vLLM FP8 | **1.36** |
+| TRT-LLM 1.2.1 serve bf16(CUDA Graph,overlap 关) | 2.71 |
+| TRT-LLM serve bf16(overlap 开) | 2.03 |
+| TRT-LLM 进程内 LLM API bf16 | 1.86 |
+
+**TRT-LLM 实测结论(意外但明确)**:1.2.1 的 PyTorch 后端在 0.6B bs=1 场景全面慢于
+vLLM——serve 模式多一层 orchestrator IPC(2.0-2.7),进程内 LLM API 也只到 1.86
+(sync generate 每调用开销大,真实分布 P50 35.5ms vs vLLM 27.1)。
+"TRT-LLM host 开销最低"的先验在该版本 PyTorch flow 上不成立;经典 TRT engine-build
+路径已被官方弃用,不再投入。**引擎定论:vLLM;"进程内引擎"路线用 vLLM `AsyncLLM`。**
+(复现:`tn/serve/trt_inproc_probe.py`、`tn/serve/trtllm_latency.yaml`;
+坑:需 `dnf install openmpi pmix` + `LD_LIBRARY_PATH=/usr/lib64/openmpi/lib` +
+`OMPI_ALLOW_RUN_AS_ROOT*`;transformers 5.x 存的 tokenizer_config 里
+`extra_special_tokens` 为 list,TRT venv 的 transformers 4.57 读不了,
+用 `runs/sft_v1/final-trt` 修正副本。)
 
 端到端延迟(盲测整句,500 请求,含 HTTP + tokenize + 生成 + 解析 + 生成后校验):
 

@@ -11,3 +11,4 @@ data/train_v2_all.jsonl
 data/train_v3_all.jsonl
 *.char.bmes
 BMES分布.csv
+data/pool_s2.jsonl

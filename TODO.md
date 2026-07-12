@@ -53,4 +53,16 @@
 - [ ] (可选)1.7B-Base 对照
 - [ ] token/decode 步数分布落盘(供 L20 延迟推算)
 
+## Phase 7:数据 v2(2026-07-11,负监督 + 真实分布)✅ 第一步
+
+- [x] verbalizer `render()`(canonical 渲染)+ SCORE 连字符/RANGE en-dash/3位年份扩覆盖
+- [x] 标贝 BMES 转换器 `tn/datagen/databaker.py`;eval 5023 句(`data/databaker_eval.jsonl`,固定 OOD 回归集)/ train 19,912 句(非商用,仅内部实验);覆盖率报告 `reports/databaker_coverage.md`
+- [x] 负槽位(正样本内嵌不展开型号)+ 负样本 7 类;v2 合成 20,369 条
+- [x] sft_v2(92k 混合):标贝集句准率 67.3%→**96.6%**,过度触发 0.73→**0.046**/句,负样本 100%;合成盲测 99.75% 无回退
+- [x] v3(2026-07-11):最小对(code/quantity 成对)+ 历史年份 + SCORE/RANGE 分隔符 → sft_v3;标贝集 96.7%/97.4%(与 v2 持平),真歧义区来回翻转(368路/470级)
+- [x] 数字错读分解(v3,标贝集):同 span 差异 = 风格翻转 113(两读均合法)+ 真读错 22(多为标注噪声/FRACTION 超采样范围)+ 漏读 66;**真模型幻觉 ≈0.2% 且线上 postcheck 可拦**(非法读法不在 valid 集合)
+- [ ] 逐位 vs 数值需要「读法政策」而非更多数据:按词法 cue(路/线/号/级)定 canonical 并在最小对中一致编码;该集 strict 口径已近约定差异天花板,以 acceptable(97.4%)为主指标
+- [ ] FRACTION sampler 分母上限 100 → 10000(1/1250 倒置 bug);SCORE-连字符 vs RANGE 消歧对
+- [ ] 归因消融(可选):v2 数据不含标贝 train 重训,分离"负监督"与"真实域适应"贡献
+
 ## 二期(不在本机):L20/TurboMind 压测、量化、EAGLE3、Stage A/PUA、VoxFlow 集成、影子模式、5k 人工标注集

@@ -178,6 +178,17 @@ def test_sample_self_consistency():
                 f"{cls}: {s.written!r} -> {s.reading!r} 未通过反向校验"
 
 
+def test_render_reproduces_sampler_canonical():
+    # render 契约:对 sampler 产出的任意书面形式,渲染结果 == sampler 的 gold
+    from tn.verbalizer import render
+    rng = random.Random(13)
+    for cls in CLASSES:
+        for _ in range(500):
+            s = sample_nsw(cls, rng)
+            assert render(cls, s.written, s.ctx) == s.reading, \
+                f"{cls}: render({s.written!r}) != {s.reading!r}"
+
+
 def test_valid_readings_bounded():
     # 校验集合规模必须有界(防组合爆炸)
     rng = random.Random(11)

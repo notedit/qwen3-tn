@@ -1,8 +1,10 @@
 """12 类 semiotic class:书面形式采样、gold 渲染、合法读法集合、反向校验。
 
-每类实现两个函数:
+每类实现三个函数:
 - _sample_X(rng) -> (written, reading, ctx)
 - _valid_X(written, ctx) -> set[str]   该书面形式全部合法读法(canonical 必在其中)
+- _render_X(written, ctx) -> str|None  任意书面形式 → canonical 读法(与 sampler 产出一致);
+  无法解析返回 None。供真实语料转数据 / 覆盖率扫描使用。
 
 约定:written 是句子中将被替换的完整 NSW 片段;reading 全部为汉字。
 ctx 是语境标签,喂给 LLM 造句时约束语境(phone/quantity/code/...)。
@@ -37,7 +39,8 @@ def _rand_int(rng: random.Random, max_digits: int = 8) -> int:
 
 
 def _sample_number(rng):
-    ctx = rng.choices(["quantity", "code"], [0.75, 0.25])[0]
+    # code 权重上调(标贝真实分布 DIGIT 逐位占 NSW 41%,v1 的 0.25 严重偏低)
+    ctx = rng.choices(["quantity", "code"], [0.65, 0.35])[0]
     if ctx == "code":
         s = "".join(rng.choice("0123456789") for _ in range(rng.randint(3, 8)))
         return s, read_digits(s), ctx
@@ -77,12 +80,15 @@ def _read_year(y) -> str:
 
 
 def _sample_date(rng):
-    y = rng.randint(1949, 2032)
+    # 30% 历史年份(含 3 位,如 976年),压真实语料中的古代纪年错读
+    y = rng.randint(100, 1948) if rng.random() < 0.3 else rng.randint(1949, 2032)
     m = rng.randint(1, 12)
     d = rng.randint(1, 28)
     tpl = rng.choices(
         ["ymd", "ymd_dash", "ymd_dot", "md", "y", "d_hao", "md_hao"],
         [0.25, 0.1, 0.05, 0.2, 0.15, 0.15, 0.1])[0]
+    if y < 1000 and tpl in ("ymd_dash", "ymd_dot"):
+        tpl = "ymd"  # 3 位年份不出现连字符/点分式(书面上不自然)
     if tpl == "ymd":
         return f"{y}年{m}月{d}日", f"{_read_year(y)}年{read_integer(m)}月{read_integer(d)}日", "date"
     if tpl == "ymd_dash":
@@ -102,14 +108,14 @@ def _valid_date(written, ctx):
     w = written
     out = set()
     import re
-    m = re.fullmatch(r"(\d{4})[年\-./](?:(\d{1,2})[月\-./](\d{1,2})[日号]?)?", w) \
-        or re.fullmatch(r"(\d{4})年", w)
+    m = re.fullmatch(r"(\d{3,4})[年\-./](?:(\d{1,2})[月\-./](\d{1,2})[日号]?)?", w) \
+        or re.fullmatch(r"(\d{3,4})年", w)
     if m and m.group(1) and len(m.groups()) >= 3 and m.group(2):
         y, mo, d = m.group(1), int(m.group(2)), int(m.group(3))
         for suf in ("日", "号"):
             out.add(f"{_read_year(y)}年{read_integer(mo)}月{read_integer(d)}{suf}")
         return out
-    m = re.fullmatch(r"(\d{4})年", w)
+    m = re.fullmatch(r"(\d{3,4})年", w)  # 3 位:公元早期年份(如 976年)
     if m:
         return {f"{_read_year(m.group(1))}年", f"{read_integer(int(m.group(1)))}年"}
     m = re.fullmatch(r"(\d{1,2})月(\d{1,2})([日号])", w)
@@ -333,17 +339,29 @@ def _valid_fraction(written, ctx):
 
 def _sample_score(rng):
     a, b = rng.randint(0, 30), rng.randint(0, 30)
-    return f"{a}:{b}", f"{read_integer(a)}比{read_integer(b)}", "score"
+    sep = rng.choices([":", "-", "–"], [0.6, 0.3, 0.1])[0]
+    return f"{a}{sep}{b}", f"{read_integer(a)}比{read_integer(b)}", "score"
+
+
+_SCORE_SEPS = ":-–—"
+
+
+def _split_score(written):
+    for sep in _SCORE_SEPS:
+        if sep in written:
+            a, b = written.split(sep, 1)
+            if a.isdigit() and b.isdigit():
+                return int(a), int(b)
+    return None
 
 
 def _valid_score(written, ctx):
-    if ":" not in written:
+    ab = _split_score(written)
+    if ab is None:
         return set()
-    a, b = written.split(":", 1)
-    if not (a.isdigit() and b.isdigit()):
-        return set()
+    a, b = ab
     return {f"{ra}比{rb}"
-            for ra in integer_readings(int(a)) for rb in integer_readings(int(b))}
+            for ra in integer_readings(a) for rb in integer_readings(b)}
 
 
 # ---------------- VERSION ----------------
@@ -369,7 +387,7 @@ def _valid_version(written, ctx):
 def _sample_range(rng):
     a = rng.randint(1, 500)
     b = rng.randint(a + 1, a + 500)
-    sep = rng.choice(["-", "~", "—"])
+    sep = rng.choice(["-", "~", "—", "–"])
     if rng.random() < 0.2:
         return f"{a}%{sep}{b}%", f"百分之{read_integer(a)}到百分之{read_integer(b)}", "range"
     return f"{a}{sep}{b}", f"{read_integer(a)}到{read_integer(b)}", "range"
@@ -377,7 +395,7 @@ def _sample_range(rng):
 
 def _valid_range(written, ctx):
     import re
-    m = re.fullmatch(r"(\d+)(%?)[-~—](\d+)(%?)", written)
+    m = re.fullmatch(r"(\d+)(%?)[-~—–~](\d+)(%?)", written)
     if not m:
         return set()
     a, pa, b, pb = int(m.group(1)), m.group(2), int(m.group(3)), m.group(4)
@@ -412,21 +430,153 @@ def _valid_serial(written, ctx):
     return {head + r for r in digit_string_readings(digits)}
 
 
+# ---------------- render(canonical,与 sampler 产出一致) ----------------
+
+def _render_number(written, ctx):
+    if ctx == "code":
+        return read_digits(written) if written.isdigit() else None
+    for unit in ("万", "亿"):
+        if written.endswith(unit):
+            return read_number(written[:-1]) + unit
+    return read_number(written)
+
+
+def _render_date(written, ctx):
+    import re
+    m = re.fullmatch(r"(\d{3,4})年(?:(\d{1,2})月(\d{1,2})([日号]))?", written)
+    if m:
+        if m.group(2) is None:
+            return f"{_read_year(m.group(1))}年"
+        return (f"{_read_year(m.group(1))}年{read_integer(int(m.group(2)))}月"
+                f"{read_integer(int(m.group(3)))}{m.group(4)}")
+    m = re.fullmatch(r"(\d{4})[-./](\d{1,2})[-./](\d{1,2})", written)
+    if m:
+        return (f"{_read_year(m.group(1))}年{read_integer(int(m.group(2)))}月"
+                f"{read_integer(int(m.group(3)))}日")
+    m = re.fullmatch(r"(\d{1,2})月(\d{1,2})([日号])", written)
+    if m:
+        return f"{read_integer(int(m.group(1)))}月{read_integer(int(m.group(2)))}{m.group(3)}"
+    m = re.fullmatch(r"(\d{1,2})([日号])", written)
+    if m:
+        return f"{read_integer(int(m.group(1)))}{m.group(2)}"
+    return None
+
+
+def _render_time(written, ctx):
+    parts = written.split(":")
+    if not all(p.isdigit() for p in parts) or not 2 <= len(parts) <= 3:
+        return None
+    h, mi = int(parts[0]), int(parts[1])
+    se = int(parts[2]) if len(parts) == 3 else None
+    return f"{_read_hour(h)}点{_read_min(mi)}" + (_read_sec(se) if se is not None else "")
+
+
+def _render_money(written, ctx):
+    w, cur = written, "元"
+    for sym in ("¥", "$"):
+        if w.startswith(sym):
+            cur = "美元" if sym == "$" else "元"
+            w = w[len(sym):]
+    for suf in ("美元", "元"):
+        if w.endswith(suf):
+            cur = suf
+            w = w[: -len(suf)]
+    big = ""
+    for unit in ("万", "亿"):
+        if w.endswith(unit):
+            big = unit
+            w = w[:-1]
+    if not w or not all(c.isdigit() or c in ".,," for c in w):
+        return None
+    return read_number(w) + big + cur
+
+
+def _render_phone(written, ctx):
+    digits = written.replace("-", "")
+    return read_digits(digits, yao=True) if digits.isdigit() else None
+
+
+def _render_measure(written, ctx):
+    for unit in sorted(_UNIT_READINGS, key=len, reverse=True):
+        if written.endswith(unit):
+            num = written[: -len(unit)]
+            if num and all(c.isdigit() or c in ".-" for c in num):
+                r = "两" if num == "2" else read_number(num)
+                return r + _UNIT_READINGS[unit][0]
+    return None
+
+
+def _render_percent(written, ctx):
+    if not written.endswith("%"):
+        return None
+    x = written[:-1]
+    body = x.lstrip("-")
+    if not body or not all(c.isdigit() or c == "." for c in body):
+        return None
+    return ("负" if x.startswith("-") else "") + "百分之" + read_number(body)
+
+
+def _render_fraction(written, ctx):
+    if "/" not in written:
+        return None
+    a, b = written.split("/", 1)
+    if not (a.isdigit() and b.isdigit()):
+        return None
+    return f"{read_integer(int(b))}分之{read_integer(int(a))}"
+
+
+def _render_score(written, ctx):
+    ab = _split_score(written)
+    if ab is None:
+        return None
+    return f"{read_integer(ab[0])}比{read_integer(ab[1])}"
+
+
+def _render_version(written, ctx):
+    segs = written.split(".")
+    if not all(s.isdigit() for s in segs) or len(segs) < 2:
+        return None
+    return "点".join(read_integer(int(s)) for s in segs)
+
+
+def _render_range(written, ctx):
+    import re
+    m = re.fullmatch(r"(\d+)(%?)[-~—–~](\d+)(%?)", written)
+    if not m:
+        return None
+    a, b = read_integer(int(m.group(1))), read_integer(int(m.group(3)))
+    if m.group(2) and m.group(4):
+        return f"百分之{a}到百分之{b}"
+    if not m.group(2) and not m.group(4):
+        return f"{a}到{b}"
+    if m.group(4):
+        return f"百分之{a}到百分之{b}"
+    return None
+
+
+def _render_serial(written, ctx):
+    head = "".join(c for c in written if not c.isdigit())
+    digits = "".join(c for c in written if c.isdigit())
+    if not digits or not (head and head.isalpha()):
+        return None
+    return head + read_digits(digits)
+
+
 # ---------------- registry ----------------
 
 _REGISTRY = {
-    "NUMBER": (_sample_number, _valid_number),
-    "DATE": (_sample_date, _valid_date),
-    "TIME": (_sample_time, _valid_time),
-    "MONEY": (_sample_money, _valid_money),
-    "PHONE": (_sample_phone, _valid_phone),
-    "MEASURE": (_sample_measure, _valid_measure),
-    "PERCENT": (_sample_percent, _valid_percent),
-    "FRACTION": (_sample_fraction, _valid_fraction),
-    "SCORE": (_sample_score, _valid_score),
-    "VERSION": (_sample_version, _valid_version),
-    "RANGE": (_sample_range, _valid_range),
-    "SERIAL": (_sample_serial, _valid_serial),
+    "NUMBER": (_sample_number, _valid_number, _render_number),
+    "DATE": (_sample_date, _valid_date, _render_date),
+    "TIME": (_sample_time, _valid_time, _render_time),
+    "MONEY": (_sample_money, _valid_money, _render_money),
+    "PHONE": (_sample_phone, _valid_phone, _render_phone),
+    "MEASURE": (_sample_measure, _valid_measure, _render_measure),
+    "PERCENT": (_sample_percent, _valid_percent, _render_percent),
+    "FRACTION": (_sample_fraction, _valid_fraction, _render_fraction),
+    "SCORE": (_sample_score, _valid_score, _render_score),
+    "VERSION": (_sample_version, _valid_version, _render_version),
+    "RANGE": (_sample_range, _valid_range, _render_range),
+    "SERIAL": (_sample_serial, _valid_serial, _render_serial),
 }
 
 CLASSES = list(_REGISTRY)
@@ -446,6 +596,17 @@ def valid_readings(cls: str, written: str, ctx: str = "") -> set[str]:
 
 def is_valid(cls: str, written: str, ctx: str, reading: str) -> bool:
     return reading in valid_readings(cls, written, ctx)
+
+
+def render(cls: str, written: str, ctx: str = "") -> str | None:
+    """任意书面形式 → canonical 读法;无法解析或不在合法集合内返回 None。"""
+    try:
+        r = _REGISTRY[cls][2](written, ctx)
+    except (ValueError, KeyError, IndexError):
+        return None
+    if r is None or r not in valid_readings(cls, written, ctx):
+        return None
+    return r
 
 
 def split_gold_edit(anchor: str, replacement: str, cls: str, ctx: str):

@@ -7,3 +7,7 @@ __pycache__/
 .pytest_cache/
 .local/
 .claude/
+data/train_v2_all.jsonl
+data/train_v3_all.jsonl
+*.char.bmes
+BMES分布.csv

@@ -10,10 +10,11 @@ from tn.verbalizer.classes import (
     CLASSES,
     NSWSample,
     is_valid,
+    render,
     sample_nsw,
     split_gold_edit,
     valid_readings,
 )
 
 __all__ = ["CLASSES", "NSWSample", "sample_nsw", "valid_readings", "is_valid",
-           "split_gold_edit"]
+           "render", "split_gold_edit"]

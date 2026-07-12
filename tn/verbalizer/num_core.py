@@ -91,9 +91,15 @@ def integer_readings(n: int, liang_alone: bool = False) -> set[str]:
 
 
 def number_readings(s: str, liang_alone: bool = False) -> set[str]:
-    """字符串数字的合法读法集合(整数含变体;小数变体作用于整数部分)。"""
+    """字符串数字的合法读法集合(整数含变体;小数变体作用于整数部分与尾零省读)。"""
     s2 = s.replace(",", "").replace(",", "")
     if "." not in s2:
         return integer_readings(int(s2), liang_alone)
     c = read_number(s2)
-    return {c, _liang(c)}
+    out = {c, _liang(c)}
+    a, b = s2.split(".", 1)
+    b2 = b.rstrip("0")
+    if b2 and b2 != b:  # 尾零省读变体:10.50 → 十点五
+        c2 = read_number(f"{a}.{b2}")
+        out |= {c2, _liang(c2)}
+    return out

@@ -17,14 +17,17 @@
 | `databaker_train.jsonl` | 19,912 | 标贝 train 转换;**非商用许可,仅内部实验,不得用于生产模型** |
 | `train_v2_synth.jsonl` | 20,369 | v2 合成:负槽位 + 负样本 7 类(seed 2) |
 | `train_v3_synth.jsonl` | 6,281 | v3 合成:code/quantity 最小对 + 历史年份(seed 3) |
+| `train_v4_synth.jsonl` | 7,455 | v4 合成:多币种/分数/单位/比分定向(seed 4,--boost) |
 
 训练混合配方(合并文件不入库,现场 cat):
 
 ```bash
 # sft_v2 = train_all_v1 + databaker_train + train_v2_synth
-# sft_v3(当前最优)= 上者 + train_v3_synth
+# sft_v3 = 上者 + train_v3_synth
+# sft_v4(当前最优)= 上者 + train_v4_synth
 cat data/train_all_v1.jsonl data/databaker_train.jsonl \
-    data/train_v2_synth.jsonl data/train_v3_synth.jsonl > /tmp/train_v3_all.jsonl
+    data/train_v2_synth.jsonl data/train_v3_synth.jsonl \
+    data/train_v4_synth.jsonl > /tmp/train_v4_all.jsonl
 ```
 
 ## 质检过程文件

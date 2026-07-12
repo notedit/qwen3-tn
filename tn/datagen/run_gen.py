@@ -25,7 +25,7 @@ from tn.parser import ParseError, parse_and_apply, render_output
 from tn.verbalizer import is_valid, valid_readings
 
 DIGIT_RE = re.compile(r"[0-90-9]")
-SYMBOL_RE = re.compile(r"[¥$%℃~～]")
+SYMBOL_RE = re.compile(r"[¥$%℃~～£€±½⅓⅔¼¾⅕⅛Ω]")
 HANZI_NUM_RE = re.compile(r"[一二三四五六七八九十百千万亿两零]")
 LATIN_RE = re.compile(r"[A-Za-z]{2,}")
 BOUNDARY_BAD = re.compile(r"[0-9A-Za-z.0-9]")
@@ -278,6 +278,8 @@ async def main():
     ap.add_argument("--neg-ratio", type=float, default=0.25)
     ap.add_argument("--pair-ratio", type=float, default=0.0,
                     help="code/quantity 最小对占比(逐位 vs 数值消歧监督)")
+    ap.add_argument("--boost", default="",
+                    help='类别权重倍率,如 "MONEY:3,FRACTION:3"')
     ap.add_argument("--variant", type=int, default=0, help="prompt 措辞版本,盲测集用 1")
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--qa-ratio", type=float, default=0.15,
@@ -286,6 +288,10 @@ async def main():
     args = ap.parse_args()
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+    if args.boost:
+        from tn.datagen.specs import set_class_boost
+        set_class_boost({k: float(v) for k, v in
+                         (kv.split(":") for kv in args.boost.split(","))})
     specs = build_specs(args.n, args.seed, args.neg_ratio, pair_ratio=args.pair_ratio)
     done = _load_done(args.out)
     todo = [s for s in specs if s.id not in done]

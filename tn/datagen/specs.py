@@ -69,8 +69,19 @@ class Spec:
     distractors: list[str] = field(default_factory=list)  # 不展开片段(正样本负槽位 / models 负样本)
 
 
+_BOOST: dict[str, float] = {}
+
+
+def set_class_boost(boost: dict[str, float]) -> None:
+    """定向批次的类别权重倍率(如 {"MONEY": 3}),不改全局基础分布。"""
+    global _BOOST
+    _BOOST = dict(boost)
+
+
 def _weighted_cls(rng: random.Random) -> str:
-    return rng.choices(list(CLASS_WEIGHTS), list(CLASS_WEIGHTS.values()))[0]
+    names = list(CLASS_WEIGHTS)
+    ws = [CLASS_WEIGHTS[c] * _BOOST.get(c, 1.0) for c in names]
+    return rng.choices(names, ws)[0]
 
 
 def _sample_items(rng: random.Random) -> list[NSWSample]:

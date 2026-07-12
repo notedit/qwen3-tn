@@ -54,8 +54,11 @@ def _sample_number(rng):
         a, b = rng.randint(0, 999), rng.randint(0, 99)
         s = f"{a}.{b:02d}" if rng.random() < 0.3 else f"{a}.{rng.randint(0, 9)}"
         return s, read_number(s), "quantity"
-    if style < 0.36:  # 负数
+    if style < 0.36:  # 负数 / ± 公差
         n = rng.randint(1, 200)
+        if rng.random() < 0.25:
+            x = f"{rng.randint(0, 9)}.{rng.randint(1, 99):02d}" if rng.random() < 0.5 else str(n)
+            return f"±{x}", "正负" + read_number(x), "quantity"
         return f"-{n}", "负" + read_integer(n), "quantity"
     if style < 0.44:  # 千分位
         n = rng.randint(1000, 99_999_999)
@@ -67,6 +70,8 @@ def _sample_number(rng):
 def _valid_number(written, ctx):
     if ctx == "code":
         return digit_string_readings(written)
+    if written.startswith("±"):
+        return {"正负" + r for r in number_readings(written[1:])}
     for unit in ("万", "亿"):
         if written.endswith(unit):
             return {r + unit for r in number_readings(written[:-1])}
@@ -85,10 +90,12 @@ def _sample_date(rng):
     m = rng.randint(1, 12)
     d = rng.randint(1, 28)
     tpl = rng.choices(
-        ["ymd", "ymd_dash", "ymd_dot", "md", "y", "d_hao", "md_hao"],
-        [0.25, 0.1, 0.05, 0.2, 0.15, 0.15, 0.1])[0]
+        ["ymd", "ymd_dash", "ymd_dot", "md", "y", "d_hao", "md_hao", "md_slash"],
+        [0.25, 0.1, 0.05, 0.18, 0.15, 0.13, 0.08, 0.06])[0]
     if y < 1000 and tpl in ("ymd_dash", "ymd_dot"):
         tpl = "ymd"  # 3 位年份不出现连字符/点分式(书面上不自然)
+    if tpl == "md_slash":  # 12/31 式月日
+        return f"{m}/{d}", f"{read_integer(m)}月{read_integer(d)}日", "date"
     if tpl == "ymd":
         return f"{y}年{m}月{d}日", f"{_read_year(y)}年{read_integer(m)}月{read_integer(d)}日", "date"
     if tpl == "ymd_dash":
@@ -126,6 +133,10 @@ def _valid_date(written, ctx):
     if m:
         d, suf = int(m.group(1)), m.group(2)
         return {f"{read_integer(d)}{suf}"}
+    m = re.fullmatch(r"(\d{1,2})/(\d{1,2})", w)
+    if m and 1 <= int(m.group(1)) <= 12 and 1 <= int(m.group(2)) <= 31:
+        mo, d = int(m.group(1)), int(m.group(2))
+        return {f"{read_integer(mo)}月{read_integer(d)}{suf}" for suf in ("日", "号")}
     return set()
 
 
@@ -175,8 +186,12 @@ def _valid_time(written, ctx):
     for hr in hours:
         if se is not None:
             out.add(f"{hr}{_read_min(mi)}{_read_sec(se)}")
+            if se == 0:
+                out.add(f"{hr}{_read_min(mi)}零秒")
             continue
         out.add(f"{hr}{_read_min(mi)}")
+        if mi:  # 无「分」变体(原文时间后紧跟"分"字的场景)
+            out.add(f"{hr}{'零' if mi < 10 else ''}{read_integer(mi)}")
         if mi == 30:
             out.add(f"{hr}半")
         if mi == 0:
@@ -186,17 +201,68 @@ def _valid_time(written, ctx):
 
 # ---------------- MONEY ----------------
 
-_CURRENCY = [("¥", "", "元"), ("", "元", "元"), ("$", "", "美元"), ("", "美元", "美元")]
+# 币种词表(rules-as-data):首个读法为 canonical
+_CUR_PREFIX = {  # 前缀符号(长优先匹配:US$ 先于 $,JP¥ 先于 ¥)
+    "US$": ["美元"], "HK$": ["港币", "港元"], "CAD$": ["加元"], "NT$": ["新台币"],
+    "JP¥": ["日元"], "£": ["英镑"], "€": ["欧元"], "$": ["美元"], "¥": ["元", "人民币"],
+}
+_CUR_CODE = {  # 字母代码前缀(与数字间可有空格/nbsp)
+    "USD": ["美元"], "EUR": ["欧元"], "GBP": ["英镑"], "JPY": ["日元"],
+    "CNY": ["人民币", "元"], "HKD": ["港币", "港元"], "AUD": ["澳元"], "CAD": ["加元"],
+    "KRW": ["韩元"], "THB": ["泰铢"], "INR": ["印度卢比", "卢比"],
+    "SGD": ["新加坡元", "新元"], "MYR": ["林吉特", "马来西亚林吉特"],
+    "IDR": ["印尼盾"], "RUB": ["卢布"],
+}
+_CUR_HANZI = ["美元", "欧元", "日元", "英镑", "港币", "港元", "韩元", "泰铢",
+              "卢布", "加元", "澳元", "新台币", "人民币", "元"]  # 汉字后缀(长优先)
+
+
+def _parse_money(w: str):
+    """written → (数字串, 万/亿, 读法列表);非金额返回 None。"""
+    readings = None
+    for p in sorted(_CUR_PREFIX, key=len, reverse=True):
+        if w.startswith(p):
+            readings, w = _CUR_PREFIX[p], w[len(p):]
+            break
+    if readings is None:
+        for c in sorted(_CUR_CODE, key=len, reverse=True):
+            if w.startswith(c):
+                readings, w = _CUR_CODE[c], w[len(c):].lstrip("  ")
+                break
+    if readings is None:
+        for s in sorted(_CUR_HANZI, key=len, reverse=True):
+            if w.endswith(s):
+                readings, w = [s], w[: -len(s)]
+                break
+    if readings is None:
+        return None
+    big = ""
+    for unit in ("万", "亿"):
+        if w.endswith(unit):
+            big, w = unit, w[:-1]
+    if not w or not all(c.isdigit() or c in ".,," for c in w):
+        return None
+    return w, big, readings
 
 
 def _sample_money(rng):
-    sym, suffix, cur = rng.choice(_CURRENCY)
+    r = rng.random()
+    if r < 0.7:  # 主流:人民币/美元(与 v1 分布一致)
+        sym, suffix = rng.choice([("¥", ""), ("", "元"), ("$", ""), ("", "美元")])
+    elif r < 0.85:  # 符号型外币
+        sym, suffix = rng.choice(["£", "€", "HK$", "JP¥"]), ""
+    elif r < 0.95:  # 代码型外币(30% 带空格/nbsp)
+        code = rng.choice(list(_CUR_CODE))
+        sep = rng.choice([" ", " "]) if rng.random() < 0.3 else ""
+        sym, suffix = code + sep, ""
+    else:  # 汉字后缀外币
+        sym, suffix = "", rng.choice(["欧元", "日元", "英镑", "港币"])
+    cur = _parse_money(f"{sym}1{suffix}")[2][0]
     if rng.random() < 0.25:  # 大额 + 万/亿
         unit = rng.choice(["万", "亿"])
         x = str(rng.randint(1, 9999)) if rng.random() < 0.7 else \
             f"{rng.randint(1, 99)}.{rng.randint(1, 9)}"
-        w = f"{sym}{x}{unit}{suffix}"
-        return w, f"{read_number(x)}{unit}{cur}", "money"
+        return f"{sym}{x}{unit}{suffix}", f"{read_number(x)}{unit}{cur}", "money"
     if rng.random() < 0.35:  # 小数金额
         a, b = rng.randint(0, 9999), rng.randint(1, 99)
         x = f"{a}.{b:02d}" if rng.random() < 0.5 else f"{a}.{rng.randint(1, 9)}"
@@ -206,30 +272,26 @@ def _sample_money(rng):
 
 
 def _valid_money(written, ctx):
-    w = written
-    cur = "元"
-    for sym in ("¥", "$"):
-        if w.startswith(sym):
-            cur = "美元" if sym == "$" else "元"
-            w = w[len(sym):]
-    for suf in ("美元", "元"):
-        if w.endswith(suf):
-            cur = suf
-            w = w[: -len(suf)]
-    big = ""
-    for unit in ("万", "亿"):
-        if w.endswith(unit):
-            big = unit
-            w = w[:-1]
-    if not w or not all(c.isdigit() or c in ".,," for c in w):
+    got = _parse_money(written)
+    if got is None:
         return set()
-    out = {r + big + cur for r in number_readings(w, liang_alone=True)}
-    if not big and "." in w and cur == "元":
+    w, big, readings = got
+    out = {r + big + cur for r in number_readings(w, liang_alone=True)
+           for cur in readings}
+    if not big and "." in w and readings[0] == "元":
         a, b = w.split(".", 1)
         if len(b) == 1 and b != "0":
             out.add(f"{read_integer(int(a))}块{read_digits(b)}")
             out.add(f"{read_integer(int(a))}元{read_digits(b)}角")
     return out
+
+
+def _render_money(written, ctx):
+    got = _parse_money(written)
+    if got is None:
+        return None
+    w, big, readings = got
+    return read_number(w) + big + readings[0]
 
 
 # ---------------- PHONE ----------------
@@ -260,29 +322,63 @@ _UNIT_READINGS = {
     "kg": ["公斤", "千克"], "g": ["克"], "t": ["吨"],
     "L": ["升"], "ml": ["毫升"], "℃": ["摄氏度", "度"], "°C": ["摄氏度", "度"],
     "米": ["米"], "公里": ["公里"], "斤": ["斤"], "度": ["度"],
+    "V": ["伏特", "伏"], "A": ["安培", "安"], "Ω": ["欧姆", "欧"],
+    "W": ["瓦特", "瓦"], "kW": ["千瓦"], "mA": ["毫安"], "mAh": ["毫安时"],
+    "Hz": ["赫兹", "赫"], "kHz": ["千赫兹", "千赫"], "MHz": ["兆赫兹", "兆赫"],
+    "lux": ["勒克斯"], "kcal": ["千卡", "大卡"],
 }
+# 前置模板单位:读法为「模板 format 数字」而非「数字+单位」
+_UNIT_TPL = {"mph": "每小时{}英里", "km/h": "每小时{}公里",
+             "m/s": "每秒{}米", "Mbps": "每秒{}兆比特"}
+
+
+def _read_signed(x: str) -> str:
+    """数字读法,支持 ± 前缀(正负)。"""
+    if x.startswith("±"):
+        return "正负" + read_number(x[1:])
+    return read_number(x)
+
+
+def _signed_readings(num: str, liang_alone=False) -> set[str]:
+    if num.startswith("±"):
+        return {"正负" + r for r in number_readings(num[1:], liang_alone)}
+    return number_readings(num, liang_alone)
+
+
+def _measure_num_ok(num: str) -> bool:
+    body = num[1:] if num[:1] in "±-" else num
+    return bool(body) and all(c.isdigit() or c == "." for c in body)
 
 
 def _sample_measure(rng):
+    if rng.random() < 0.1:  # 前置模板单位(速度/网速)
+        unit = rng.choice(list(_UNIT_TPL))
+        x = str(rng.randint(1, 999))
+        return f"{x}{unit}", _UNIT_TPL[unit].format(read_number(x)), "measure"
     unit = rng.choice(list(_UNIT_READINGS))
     if rng.random() < 0.3:
         x = f"{rng.randint(0, 99)}.{rng.randint(1, 9)}"
     elif unit in ("℃", "°C") and rng.random() < 0.3:
-        x = f"-{rng.randint(1, 30)}"
+        x = f"-{rng.randint(1, 30)}" if rng.random() < 0.7 else f"±{rng.randint(1, 9)}"
     else:
         x = str(rng.randint(1, 9999))
-    r = read_number(x)
+    r = _read_signed(x)
     if x == "2":
         r = "两"
     return f"{x}{unit}", r + _UNIT_READINGS[unit][0], "measure"
 
 
 def _valid_measure(written, ctx):
+    for unit in sorted(_UNIT_TPL, key=len, reverse=True):
+        if written.endswith(unit):
+            num = written[: -len(unit)]
+            if _measure_num_ok(num):
+                return {_UNIT_TPL[unit].format(n) for n in _signed_readings(num)}
     for unit in sorted(_UNIT_READINGS, key=len, reverse=True):
         if written.endswith(unit):
             num = written[: -len(unit)]
-            if num and all(c.isdigit() or c in ".-" for c in num):
-                nums = number_readings(num, liang_alone=True)
+            if _measure_num_ok(num):
+                nums = _signed_readings(num, liang_alone=True)
                 return {n + u for n in nums for u in _UNIT_READINGS[unit]}
     return set()
 
@@ -319,27 +415,59 @@ def _valid_percent(written, ctx):
 
 # ---------------- FRACTION ----------------
 
+_VULGAR = {"½": (1, 2), "⅓": (1, 3), "⅔": (2, 3), "¼": (1, 4), "¾": (3, 4),
+           "⅕": (1, 5), "⅛": (1, 8)}
+
+
+def _frac_canonical(a: int, b: int) -> str:
+    return f"{read_integer(b)}分之{read_integer(a)}"
+
+
 def _sample_fraction(rng):
-    b = rng.randint(2, 100)
-    a = rng.randint(1, b - 1)
-    return f"{a}/{b}", f"{read_integer(b)}分之{read_integer(a)}", "fraction"
+    if rng.random() < 0.35:  # unicode 分数字符,60% 带整数前缀(带分数)
+        ch = rng.choice(list(_VULGAR))
+        a, b = _VULGAR[ch]
+        if rng.random() < 0.6:
+            n = rng.randint(1, 9)
+            return f"{n}{ch}", f"{read_integer(n)}又{_frac_canonical(a, b)}", "fraction"
+        return ch, _frac_canonical(a, b), "fraction"
+    b = rng.choice([100, 1000]) if rng.random() < 0.2 else rng.randint(2, 999)
+    a = rng.randint(1, min(b - 1, 99))
+    return f"{a}/{b}", _frac_canonical(a, b), "fraction"
 
 
 def _valid_fraction(written, ctx):
+    import re
+    m = re.fullmatch(r"(\d*)([½⅓⅔¼¾⅕⅛])", written)
+    if m:
+        a, b = _VULGAR[m.group(2)]
+        base = {_frac_canonical(a, b)}
+        if not m.group(1):
+            return base
+        return {f"{rn}又{f}" for rn in integer_readings(int(m.group(1))) for f in base}
     if "/" not in written:
         return set()
     a, b = written.split("/", 1)
     if not (a.isdigit() and b.isdigit()):
         return set()
-    return {f"{rb}分之{ra}"
-            for ra in integer_readings(int(a)) for rb in integer_readings(int(b))}
+    out = {f"{rb}分之{ra}"
+           for ra in integer_readings(int(a)) for rb in integer_readings(int(b))}
+    if int(b) in (100, 1000):  # 百分之/千分之 变体(canonical 仍为 X分之Y,防标签漂移)
+        pre = "百分之" if int(b) == 100 else "千分之"
+        out |= {pre + ra for ra in integer_readings(int(a))}
+    return out
 
 
 # ---------------- SCORE ----------------
 
 def _sample_score(rng):
-    a, b = rng.randint(0, 30), rng.randint(0, 30)
+    hi = 150 if rng.random() < 0.3 else 30  # 覆盖篮球等大比分
+    a, b = rng.randint(0, hi), rng.randint(0, hi)
     sep = rng.choices([":", "-", "–"], [0.6, 0.3, 0.1])[0]
+    if rng.random() < 0.08:  # 小数比率(如 1:1.5)
+        w = f"1{sep}{a}.{rng.randint(1, 9)}"
+        aa, bb = w.split(sep, 1)
+        return w, f"{read_number(aa)}比{read_number(bb)}", "score"
     return f"{a}{sep}{b}", f"{read_integer(a)}比{read_integer(b)}", "score"
 
 
@@ -347,11 +475,12 @@ _SCORE_SEPS = ":-–—"
 
 
 def _split_score(written):
+    import re
     for sep in _SCORE_SEPS:
         if sep in written:
             a, b = written.split(sep, 1)
-            if a.isdigit() and b.isdigit():
-                return int(a), int(b)
+            if re.fullmatch(r"\d+(\.\d+)?", a) and re.fullmatch(r"\d+(\.\d+)?", b):
+                return a, b
     return None
 
 
@@ -361,7 +490,7 @@ def _valid_score(written, ctx):
         return set()
     a, b = ab
     return {f"{ra}比{rb}"
-            for ra in integer_readings(a) for rb in integer_readings(b)}
+            for ra in number_readings(a) for rb in number_readings(b)}
 
 
 # ---------------- VERSION ----------------
@@ -435,6 +564,8 @@ def _valid_serial(written, ctx):
 def _render_number(written, ctx):
     if ctx == "code":
         return read_digits(written) if written.isdigit() else None
+    if written.startswith("±"):
+        return "正负" + read_number(written[1:])
     for unit in ("万", "亿"):
         if written.endswith(unit):
             return read_number(written[:-1]) + unit
@@ -459,6 +590,9 @@ def _render_date(written, ctx):
     m = re.fullmatch(r"(\d{1,2})([日号])", written)
     if m:
         return f"{read_integer(int(m.group(1)))}{m.group(2)}"
+    m = re.fullmatch(r"(\d{1,2})/(\d{1,2})", written)
+    if m and 1 <= int(m.group(1)) <= 12 and 1 <= int(m.group(2)) <= 31:
+        return f"{read_integer(int(m.group(1)))}月{read_integer(int(m.group(2)))}日"
     return None
 
 
@@ -471,37 +605,22 @@ def _render_time(written, ctx):
     return f"{_read_hour(h)}点{_read_min(mi)}" + (_read_sec(se) if se is not None else "")
 
 
-def _render_money(written, ctx):
-    w, cur = written, "元"
-    for sym in ("¥", "$"):
-        if w.startswith(sym):
-            cur = "美元" if sym == "$" else "元"
-            w = w[len(sym):]
-    for suf in ("美元", "元"):
-        if w.endswith(suf):
-            cur = suf
-            w = w[: -len(suf)]
-    big = ""
-    for unit in ("万", "亿"):
-        if w.endswith(unit):
-            big = unit
-            w = w[:-1]
-    if not w or not all(c.isdigit() or c in ".,," for c in w):
-        return None
-    return read_number(w) + big + cur
-
-
 def _render_phone(written, ctx):
     digits = written.replace("-", "")
     return read_digits(digits, yao=True) if digits.isdigit() else None
 
 
 def _render_measure(written, ctx):
+    for unit in sorted(_UNIT_TPL, key=len, reverse=True):
+        if written.endswith(unit):
+            num = written[: -len(unit)]
+            if _measure_num_ok(num):
+                return _UNIT_TPL[unit].format(_read_signed(num))
     for unit in sorted(_UNIT_READINGS, key=len, reverse=True):
         if written.endswith(unit):
             num = written[: -len(unit)]
-            if num and all(c.isdigit() or c in ".-" for c in num):
-                r = "两" if num == "2" else read_number(num)
+            if _measure_num_ok(num):
+                r = "两" if num == "2" else _read_signed(num)
                 return r + _UNIT_READINGS[unit][0]
     return None
 
@@ -517,19 +636,25 @@ def _render_percent(written, ctx):
 
 
 def _render_fraction(written, ctx):
+    import re
+    m = re.fullmatch(r"(\d*)([½⅓⅔¼¾⅕⅛])", written)
+    if m:
+        a, b = _VULGAR[m.group(2)]
+        core = _frac_canonical(a, b)
+        return f"{read_integer(int(m.group(1)))}又{core}" if m.group(1) else core
     if "/" not in written:
         return None
     a, b = written.split("/", 1)
     if not (a.isdigit() and b.isdigit()):
         return None
-    return f"{read_integer(int(b))}分之{read_integer(int(a))}"
+    return _frac_canonical(int(a), int(b))
 
 
 def _render_score(written, ctx):
     ab = _split_score(written)
     if ab is None:
         return None
-    return f"{read_integer(ab[0])}比{read_integer(ab[1])}"
+    return f"{read_number(ab[0])}比{read_number(ab[1])}"
 
 
 def _render_version(written, ctx):

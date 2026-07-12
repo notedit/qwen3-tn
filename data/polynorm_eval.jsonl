@@ -160,7 +160,7 @@
 {"id": "polynorm-163", "src": "工资€3000。", "edits": [["€3000", "三千欧元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-164", "src": "£50的优惠券。", "edits": [["£50", "五十英镑"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-165", "src": "JP¥10000。", "edits": [["JP¥10000", "一万日元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-166", "src": "HK$1000", "edits": [["HK$1000", "一千港币。"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-166", "src": "HK$1000", "edits": [["HK$1000", "一千港币"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-167", "src": "€1.99的小费。", "edits": [["€1.99", "一点九九欧元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-168", "src": "$1百万投资。", "edits": [["$1", "一"], ["万", "万美元"]], "meta": {"classes": ["MONEY", "MONEY"], "ctxs": ["money", "money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-169", "src": "¥0.99的特价。", "edits": [["¥0.99", "零点九九元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
@@ -170,11 +170,11 @@
 {"id": "polynorm-173", "src": "AUD100。", "edits": [["AUD100", "一百澳元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-174", "src": "SGD50.30。", "edits": [["SGD50.30", "五十点三新加坡元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-175", "src": "KRW10000。", "edits": [["KRW10000", "一万韩元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-176", "src": "THB 500", "edits": [["THB 500", "五百泰铢。"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-177", "src": "RUB 1000", "edits": [["RUB 1000", "一千卢布。"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-176", "src": "THB 500", "edits": [["THB 500", "五百泰铢"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-177", "src": "RUB 1000", "edits": [["RUB 1000", "一千卢布"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-178", "src": "INR5000。", "edits": [["INR5000", "五千印度卢比"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-179", "src": "MYR 100", "edits": [["MYR 100", "一百马来西亚林吉特。"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-180", "src": "IDR 100000", "edits": [["IDR 100000", "十万印尼盾。"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-179", "src": "MYR 100", "edits": [["MYR 100", "一百马来西亚林吉特"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-180", "src": "IDR 100000", "edits": [["IDR 100000", "十万印尼盾"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-181", "src": "距离是5km。", "edits": [["5km", "五公里"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-182", "src": "容量为500ml。", "edits": [["500ml", "五百毫升"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-183", "src": "重量10kg。", "edits": [["10kg", "十公斤"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
@@ -219,7 +219,7 @@
 {"id": "polynorm-224", "src": "5×7=35。", "edits": [["5×7=35", "五乘七等于三十五"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Mathematical Expression", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-225", "src": "8÷2=4。", "edits": [["8÷2=4", "八除以二等于四"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Mathematical Expression", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-226", "src": "3²=9。", "edits": [["3²=9", "三的二次方等于九"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Mathematical Expression", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-227", "src": "3 * (1 + 2)", "edits": [["3 * (1 + 2)", "三乘以括号一加二。"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Mathematical Expression", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-227", "src": "3 * (1 + 2)", "edits": [["3 * (1 + 2)", "三乘以括号一加二"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Mathematical Expression", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-228", "src": "π≈3.14。", "edits": [["π≈3.14", "圆周率约等于三点一四"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Mathematical Expression", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-229", "src": "1+2+3=6。", "edits": [["1+2+3=6", "一加二加三等于六"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Mathematical Expression", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-230", "src": "15-8=7。", "edits": [["15-8=7", "十五减八等于七"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Mathematical Expression", "kind": "positive", "source": "polynorm-bench"}}

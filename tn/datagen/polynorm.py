@@ -73,6 +73,9 @@ def main():
         for line in open(args.src, encoding="utf-8"):
             rec = json.loads(line)
             src, tgt = rec["original_text"].strip(), rec["normalized_text"].strip()
+            # 伪影修正:normalized 带句末标点而 original 没有 → 剥离(否则读法混入标点)
+            while tgt and tgt[-1] in "。.!?!?" and (not src or src[-1] != tgt[-1]):
+                tgt = tgt[:-1]
             cat = rec["category"]
             if not src or "\n" in src:
                 stats["reject:bad_text"] += 1

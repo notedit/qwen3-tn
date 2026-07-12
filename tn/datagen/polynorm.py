@@ -65,7 +65,27 @@ CATEGORY_MAP = {
     "License Plate or Serial Number": ("SERIAL", "serial"),
     "Vehicle or Product Code": ("SERIAL", "serial"),
     "ISBN": ("NUMBER", "code"),
+    "Mathematical Expression": ("MATH", "math"),
+    "Roman Numeral": ("ROMAN", "roman"),
 }
+
+# 逐 span 类别修正:category 是句子级标签,句内 span 可能属别的类
+# (如 Time 句里的 "每2小时")。以 gold 读法能否被该类 valid 集解释为准。
+_REFINE_ORDER = [("NUMBER", "quantity"), ("NUMBER", "code"), ("DATE", "date"),
+                 ("TIME", "time"), ("MEASURE", "measure"), ("MONEY", "money"),
+                 ("FRACTION", "fraction"), ("SCORE", "score"), ("VERSION", "version"),
+                 ("SERIAL", "serial"), ("ROMAN", "roman"), ("MATH", "math"),
+                 ("PERCENT", "percent"), ("PHONE", "phone")]
+
+
+def refine_class(cls: str, ctx: str, written: str, reading: str):
+    from tn.verbalizer import valid_readings
+    if reading in valid_readings(cls, written, ctx):
+        return cls, ctx
+    for c2, x2 in _REFINE_ORDER:
+        if reading in valid_readings(c2, written, x2):
+            return c2, x2
+    return cls, ctx
 
 
 def extract_edits(src: str, tgt: str):
@@ -108,6 +128,11 @@ def main():
             if int(rec["index"]) in BLOCKLIST:
                 stats[f"blocked:{BLOCKLIST[int(rec['index'])]}"] += 1
                 continue
+            # 读法政策(2026-07-12 拍板):电话数字 1 读「幺」;Apple gold 一律「一」式,
+            # 含 1 的电话样本与政策直接冲突 → 剔除(v 前缀不读「版本」已在 BLOCKLIST)
+            if rec["category"] == "Phone Number" and "1" in rec["original_text"]:
+                stats["blocked:policy"] += 1
+                continue
             # nbsp → 空格(输入归一化,生产前端同样预处理)
             src = rec["original_text"].replace(" ", " ").strip()
             tgt = rec["normalized_text"].replace(" ", " ").strip()
@@ -132,11 +157,13 @@ def main():
                 stats["reject:anchor"] += 1
                 continue
             cls, ctx = CATEGORY_MAP.get(cat, ("UNK", ""))
+            refined = [refine_class(cls, ctx, a, r) for a, r in edits]
             fout.write(json.dumps({
                 "id": f"polynorm-{rec['index']}",
                 "src": src,
                 "edits": [list(e) for e in edits],
-                "meta": {"classes": [cls] * len(edits), "ctxs": [ctx] * len(edits),
+                "meta": {"classes": [c for c, _ in refined],
+                         "ctxs": [x for _, x in refined],
                          "domain": cat, "kind": "positive" if edits else "negative",
                          "source": "polynorm-bench"},
             }, ensure_ascii=False) + "\n")

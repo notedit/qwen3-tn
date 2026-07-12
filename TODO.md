@@ -69,9 +69,12 @@
 - [ ] 逐位 vs 数值需要「读法政策」而非更多数据:按词法 cue(路/线/号/级)定 canonical 并在最小对中一致编码;databaker strict 已近约定差异天花板,以 acceptable 为主指标
 - [x] v5-v7(2026-07-12):ROMAN/MATH 新类、SERIAL 位置保持式、5 种最小对、nbsp 归一;
   PolyNorm acceptable 79.3→**93.9(sft_v6 最优)**;v7 修2破4 触及 293 句集噪声地板
-- [ ] PolyNorm 93.9→95%+ 的稳定路径:**Stage-2 rejection sampling**(在大池上采模型自身错误
-  低 lr 精调,治斜杠日期/分数震荡、法条逐位翻转、长串幺一混杂);微批 SFT 已收敛勿再加
-- [ ] Phone 幺/一 canonical(strict 14 分)与 v 前缀读法:待读法政策表拍板
+- [x] Stage-2 rejection sampling 落地(tn/train/stage2_collect.py);合成池不对症
+  polynorm 约定边界残差,机制留给二期真实语料池
+- [x] 读法政策拍板(2026-07-12):电话 1 读「幺」、v 前缀不读「版本」→ polynorm
+  政策对齐(278 句)+ MATH/ROMAN 映射 + 逐 span 类别修正 → **sft_v6 acceptable 96.0%,95%+ 达成**
+- [ ] polynorm 剩余 ~11 失败(均已归因):货币空格码 span 融合、斜杠日期句尾、
+  法条逐位翻转、AUD100→一十错读(线上 postcheck 可拦);留待真实语料 Stage-2 一并治
 - [ ] 归因消融(可选):v2 数据不含标贝 train 重训,分离"负监督"与"真实域适应"贡献
 
 ## 二期(不在本机):L20/TurboMind 压测、量化、EAGLE3、Stage A/PUA、VoxFlow 集成、影子模式、5k 人工标注集

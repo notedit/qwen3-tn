@@ -2,6 +2,9 @@
 
 Qwen3-0.6B Span-Edit TN(TTS 文本正则化)。方案见 `docs/PLAN.md`,任务清单 `TODO.md`。
 
+模型发布:https://huggingface.co/leeoxiang/qwen3-0.6b-zh-tn(sft_v6,私有,CC-BY-NC-4.0,
+调用/部署说明见其模型卡;训练数据含标贝非商用成分,商用需换数重训)。
+
 ## 环境
 
 - `uv venv .venv --python 3.12`,依赖装在 `.venv`(见 `scripts/setup_env.sh`)

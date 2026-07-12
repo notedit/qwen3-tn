@@ -7,7 +7,7 @@
 | `blind_v0.jsonl` | 2,386 | 合成盲测集(独立 seed/prompt,与训练 pipeline 隔离) |
 | `blind_chunks.jsonl` | 2,389 | 盲测切块版(压测/流式衔接用) |
 | `databaker_eval.jsonl` | 5,023 | 标贝 dev+test 转换(`tn.datagen.databaker`),真实分布回归集;**非商用许可** |
-| `polynorm_eval.jsonl` | 361 | Apple PolyNorm-Bench zh-CN 转换(`tn.datagen.polynorm`),27 类跨域;gold 为 Apple 原标注(读法约定与本项目有差异,以 acceptable 口径为主) |
+| `polynorm_eval.jsonl` | 299 | Apple PolyNorm-Bench zh-CN 转换(`tn.datagen.polynorm`),27 类跨域,已人工复核剔除 62 条不合理样本(理由见转换器 BLOCKLIST);gold 为 Apple 原标注(读法约定与本项目有差异,以 acceptable 口径为主) |
 
 ## 训练组件(混合训练按配方 cat)
 

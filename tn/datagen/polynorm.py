@@ -17,6 +17,35 @@ from collections import Counter
 from tn.anchor import AnchorError, apply_spans, build_edit_script
 from tn.parser import ParseError, parse_and_apply, render_output
 
+# 人工复核后移除的样本(2026-07-12 逐条 review):index → 原因
+# 判定原则:合理的覆盖缺口(数学式/罗马数字/度分秒)保留;以下四类移除 ——
+#   symbol   符号逐字读(点/斜杠/井号/下标),属 Stage-A 规则层职责,非 TN 模型任务
+#   reorder  读法需要跨 span 重排(N→北纬 前置等),span-edit 契约结构性不可能
+#   policy   与本项目已定读法政策冲突(型号不展开 / v 前缀读法未定)
+#   gold     Apple 标注自身错误或 diff 碎片伪影
+BLOCKLIST = {
+    # URL/Email、Hashtag、化学下标:symbol
+    **{i: "symbol" for i in (246, 248, 256, 259, 261, 263, 265, 271, 273, 275,
+                             277, 279, 341, 345, 351, 352, 354, 360)},
+    # 生物编号:E. 删点 / 罗马 II.4:symbol
+    503: "symbol", 512: "symbol",
+    # 乐谱:拍号领域读法(4/4→四四)/音符符号/Op.No.展开/罗马和弦:symbol
+    **{i: "symbol" for i in (461, 462, 463, 465, 468, 471, 472, 473, 474, 477, 480)},
+    # 法律编号:杠/斜杠/括号读法约定:symbol
+    **{i: "symbol" for i in (369, 371, 374, 375, 376, 377, 379)},
+    # 坐标:方位字母重排(N→北纬前置):reorder
+    **{i: "reorder" for i in (401, 402, 405, 406, 409, 410, 413, 414, 417, 418, 419)},
+    # 数学式 gold 碎片伪影(括号/竖线/空格锚点):gold
+    222: "gold", 227: "gold", 238: "gold",
+    # 罗马数字:LVI 重排 / XI五 gold 丢字
+    124: "reorder", 137: "gold",
+    # 版本号:v 读「版本」约定未定 / Windows·Android 与「型号不展开」政策冲突:policy
+    421: "policy", 423: "policy", 425: "policy", 426: "policy",
+    430: "policy", 438: "policy",
+    # 产品型号:iPhone13 展开与政策冲突 / P/N 斜杠符号读
+    381: "policy", 389: "symbol",
+}
+
 # Apple category → (本项目 class, ctx);未列出的 → ("UNK", "")
 CATEGORY_MAP = {
     "Date": ("DATE", "date"),
@@ -72,6 +101,9 @@ def main():
     with open(args.out, "w", encoding="utf-8") as fout:
         for line in open(args.src, encoding="utf-8"):
             rec = json.loads(line)
+            if int(rec["index"]) in BLOCKLIST:
+                stats[f"blocked:{BLOCKLIST[int(rec['index'])]}"] += 1
+                continue
             src, tgt = rec["original_text"].strip(), rec["normalized_text"].strip()
             # 伪影修正:normalized 带句末标点而 original 没有 → 剥离(否则读法混入标点)
             while tgt and tgt[-1] in "。.!?!?" and (not src or src[-1] != tgt[-1]):

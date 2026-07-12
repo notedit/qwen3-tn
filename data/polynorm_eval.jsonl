@@ -160,7 +160,6 @@
 {"id": "polynorm-165", "src": "JP¥10000。", "edits": [["JP¥10000", "一万日元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-166", "src": "HK$1000", "edits": [["HK$1000", "一千港币"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-167", "src": "€1.99的小费。", "edits": [["€1.99", "一点九九欧元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-168", "src": "$1百万投资。", "edits": [["$1", "一"], ["万", "万美元"]], "meta": {"classes": ["MONEY", "MONEY"], "ctxs": ["money", "money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-169", "src": "¥0.99的特价。", "edits": [["¥0.99", "零点九九元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-170", "src": "£10.50的书。", "edits": [["£10.50", "十点五英镑"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-171", "src": "€500万预算。", "edits": [["€500万", "五百万欧元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
@@ -168,11 +167,11 @@
 {"id": "polynorm-173", "src": "AUD100。", "edits": [["AUD100", "一百澳元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-174", "src": "SGD50.30。", "edits": [["SGD50.30", "五十点三新加坡元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-175", "src": "KRW10000。", "edits": [["KRW10000", "一万韩元"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-176", "src": "THB 500", "edits": [["THB 500", "五百泰铢"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-177", "src": "RUB 1000", "edits": [["RUB 1000", "一千卢布"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-176", "src": "THB 500", "edits": [["THB 500", "五百泰铢"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-177", "src": "RUB 1000", "edits": [["RUB 1000", "一千卢布"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-178", "src": "INR5000。", "edits": [["INR5000", "五千印度卢比"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-179", "src": "MYR 100", "edits": [["MYR 100", "一百马来西亚林吉特"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-180", "src": "IDR 100000", "edits": [["IDR 100000", "十万印尼盾"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-179", "src": "MYR 100", "edits": [["MYR 100", "一百马来西亚林吉特"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
+{"id": "polynorm-180", "src": "IDR 100000", "edits": [["IDR 100000", "十万印尼盾"]], "meta": {"classes": ["MONEY"], "ctxs": ["money"], "domain": "Currency", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-181", "src": "距离是5km。", "edits": [["5km", "五公里"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-182", "src": "容量为500ml。", "edits": [["500ml", "五百毫升"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-183", "src": "重量10kg。", "edits": [["10kg", "十公斤"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
@@ -187,7 +186,6 @@
 {"id": "polynorm-192", "src": "电流5A。", "edits": [["5A", "五安培"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-193", "src": "电压220V。", "edits": [["220V", "二百二十伏特"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-194", "src": "频率50Hz。", "edits": [["50Hz", "五十赫兹"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-196", "src": "网速100Mbps。", "edits": [["100Mbps。", "每秒一百兆比特"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-198", "src": "剂量500mg。", "edits": [["500mg", "五百毫克"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-199", "src": "角度45°。", "edits": [["45°", "四十五度"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-200", "src": "光照1000lux。", "edits": [["1000lux", "一千勒克斯"]], "meta": {"classes": ["MEASURE"], "ctxs": ["measure"], "domain": "Unit", "kind": "positive", "source": "polynorm-bench"}}
@@ -247,7 +245,6 @@
 {"id": "polynorm-388", "src": "订单号#2023-5678。", "edits": [["#2023-5678", "二零二三五六七八"]], "meta": {"classes": ["SERIAL"], "ctxs": ["serial"], "domain": "Vehicle or Product Code", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-403", "src": "东经121.47度。", "edits": [["121.47", "一百二十一点四七"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Geographic Coordinates", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-404", "src": "北纬31°14′。", "edits": [["31°14′", "三十一度十四分"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Geographic Coordinates", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-407", "src": "南纬33.86°，东经151.21°。", "edits": [["33.86°，", "三十三点八六度"], ["151.21°", "一百五十一点二一度"]], "meta": {"classes": ["UNK", "UNK"], "ctxs": ["", ""], "domain": "Geographic Coordinates", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-408", "src": "北纬40.7128°西经74.0060°。", "edits": [["40.7128°", "四十点七一二八度"], ["74.0060°", "七十四点零零六零度"]], "meta": {"classes": ["UNK", "UNK"], "ctxs": ["", ""], "domain": "Geographic Coordinates", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-411", "src": "东经103°51′。", "edits": [["103°51′", "一百零三度五十一分"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Geographic Coordinates", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-412", "src": "北纬22°15′0″。", "edits": [["22°15′0″", "二十二度十五分零秒"]], "meta": {"classes": ["UNK"], "ctxs": [""], "domain": "Geographic Coordinates", "kind": "positive", "source": "polynorm-bench"}}
@@ -256,12 +253,9 @@
 {"id": "polynorm-420", "src": "南纬33.92°西经18.42°。", "edits": [["33.92°", "三十三点九二度"], ["18.42°", "十八点四二度"]], "meta": {"classes": ["UNK", "UNK"], "ctxs": ["", ""], "domain": "Geographic Coordinates", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-422", "src": "Python3.9发布了。", "edits": [["3.9", "三点九"]], "meta": {"classes": ["VERSION"], "ctxs": ["version"], "domain": "Version Number", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-424", "src": "版本号1.0.0。", "edits": [["1.0.0", "一点零点零"]], "meta": {"classes": ["VERSION"], "ctxs": ["version"], "domain": "Version Number", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-428", "src": "Release 2023.05。", "edits": [[" 2023.05", "二零二三点零五"]], "meta": {"classes": ["VERSION"], "ctxs": ["version"], "domain": "Version Number", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-429", "src": "2.0正式版。", "edits": [["2.0", "二点零"]], "meta": {"classes": ["VERSION"], "ctxs": ["version"], "domain": "Version Number", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-432", "src": "版本2023.1.2.3。", "edits": [["2023.1.2.3", "二零二三点一点二点三"]], "meta": {"classes": ["VERSION"], "ctxs": ["version"], "domain": "Version Number", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-433", "src": "Chrome 114。", "edits": [[" 114", "一一四"]], "meta": {"classes": ["VERSION"], "ctxs": ["version"], "domain": "Version Number", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-437", "src": "1.2.3.4版本。", "edits": [["1.2.3.4", "一点二点三点四"]], "meta": {"classes": ["VERSION"], "ctxs": ["version"], "domain": "Version Number", "kind": "positive", "source": "polynorm-bench"}}
-{"id": "polynorm-440", "src": "React 18.2.0。", "edits": [[" 18.2.0", "十八点二点零"]], "meta": {"classes": ["VERSION"], "ctxs": ["version"], "domain": "Version Number", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-441", "src": "车牌号：京A·12345。", "edits": [["·12345", "一二三四五"]], "meta": {"classes": ["SERIAL"], "ctxs": ["serial"], "domain": "License Plate or Serial Number", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-445", "src": "沪A·88888。", "edits": [["·88888", "八八八八八"]], "meta": {"classes": ["SERIAL"], "ctxs": ["serial"], "domain": "License Plate or Serial Number", "kind": "positive", "source": "polynorm-bench"}}
 {"id": "polynorm-456", "src": "身份证号110105199003076789。", "edits": [["110105199003076789", "一一零一零五一九九零零三零七六七八九"]], "meta": {"classes": ["SERIAL"], "ctxs": ["serial"], "domain": "License Plate or Serial Number", "kind": "positive", "source": "polynorm-bench"}}

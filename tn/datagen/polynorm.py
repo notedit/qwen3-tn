@@ -44,6 +44,10 @@ BLOCKLIST = {
     430: "policy", 438: "policy",
     # 产品型号:iPhone13 展开与政策冲突 / P/N 斜杠符号读
     381: "policy", 389: "symbol",
+    # gold 伪影补充:normalized 吞句号(Mbps)/删空格(Chrome 114、React 18.2.0)
+    196: "gold", 433: "gold", 440: "gold",
+    # gold 伪影:$1百万 金额拆分错乱 / 锚点吞逗号(坐标)/ 删前导空格(Release)
+    168: "gold", 407: "gold", 428: "gold",
 }
 
 # Apple category → (本项目 class, ctx);未列出的 → ("UNK", "")
@@ -104,7 +108,9 @@ def main():
             if int(rec["index"]) in BLOCKLIST:
                 stats[f"blocked:{BLOCKLIST[int(rec['index'])]}"] += 1
                 continue
-            src, tgt = rec["original_text"].strip(), rec["normalized_text"].strip()
+            # nbsp → 空格(输入归一化,生产前端同样预处理)
+            src = rec["original_text"].replace(" ", " ").strip()
+            tgt = rec["normalized_text"].replace(" ", " ").strip()
             # 伪影修正:normalized 带句末标点而 original 没有 → 剥离(否则读法混入标点)
             while tgt and tgt[-1] in "。.!?!?" and (not src or src[-1] != tgt[-1]):
                 tgt = tgt[:-1]

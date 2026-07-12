@@ -67,8 +67,11 @@
   定向桶 Currency .25→.55 / Fractions .65→.90 / Unit .61→.83 / Decimal→1.00;
   databaker 96.6/97.4 持平、盲测 99.79% 新高。**runs/sft_v4 为当前最优**
 - [ ] 逐位 vs 数值需要「读法政策」而非更多数据:按词法 cue(路/线/号/级)定 canonical 并在最小对中一致编码;databaker strict 已近约定差异天花板,以 acceptable 为主指标
-- [ ] PolyNorm 剩余:Phone 幺/一 canonical 差异(政策)、Version v前缀读"版本"(政策)、
-  nbsp 币种代码进下批造数、范围外 15 类按需扩类(数学表达式/坐标/罗马数字)
+- [x] v5-v7(2026-07-12):ROMAN/MATH 新类、SERIAL 位置保持式、5 种最小对、nbsp 归一;
+  PolyNorm acceptable 79.3→**93.9(sft_v6 最优)**;v7 修2破4 触及 293 句集噪声地板
+- [ ] PolyNorm 93.9→95%+ 的稳定路径:**Stage-2 rejection sampling**(在大池上采模型自身错误
+  低 lr 精调,治斜杠日期/分数震荡、法条逐位翻转、长串幺一混杂);微批 SFT 已收敛勿再加
+- [ ] Phone 幺/一 canonical(strict 14 分)与 v 前缀读法:待读法政策表拍板
 - [ ] 归因消融(可选):v2 数据不含标贝 train 重训,分离"负监督"与"真实域适应"贡献
 
 ## 二期(不在本机):L20/TurboMind 压测、量化、EAGLE3、Stage A/PUA、VoxFlow 集成、影子模式、5k 人工标注集

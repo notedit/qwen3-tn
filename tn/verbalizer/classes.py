@@ -42,6 +42,16 @@ def _sample_number(rng):
     # code 权重上调(标贝真实分布 DIGIT 逐位占 NSW 41%,v1 的 0.25 严重偏低)
     ctx = rng.choices(["quantity", "code"], [0.65, 0.35])[0]
     if ctx == "code":
+        r = rng.random()
+        if r < 0.12:  # 点分纪念日/代号(3.15 → 三一五,点不读)
+            s = f"{rng.randint(1, 12)}.{rng.randint(1, 30)}"
+            return s, read_digits(s), ctx
+        if r < 0.22:  # 连字符编号(订单号 2023-5678,连字符不读)
+            s = f"{rng.randint(100, 2099)}-{rng.randint(100, 9999)}"
+            return s, read_digits(s), ctx
+        if r < 0.32:  # 长证件号(15-18 位,考验长串读法风格一致性)
+            s = "".join(rng.choice("0123456789") for _ in range(rng.choice([15, 17, 18])))
+            return s, read_digits(s), ctx
         s = "".join(rng.choice("0123456789") for _ in range(rng.randint(3, 8)))
         return s, read_digits(s), ctx
     style = rng.random()
@@ -91,11 +101,13 @@ def _sample_date(rng):
     d = rng.randint(1, 28)
     tpl = rng.choices(
         ["ymd", "ymd_dash", "ymd_dot", "md", "y", "d_hao", "md_hao", "md_slash"],
-        [0.25, 0.1, 0.05, 0.18, 0.15, 0.13, 0.08, 0.06])[0]
+        [0.24, 0.09, 0.04, 0.16, 0.14, 0.11, 0.07, 0.15])[0]
     if y < 1000 and tpl in ("ymd_dash", "ymd_dot"):
         tpl = "ymd"  # 3 位年份不出现连字符/点分式(书面上不自然)
     if tpl == "md_slash":  # 12/31 式月日
         return f"{m}/{d}", f"{read_integer(m)}月{read_integer(d)}日", "date"
+    if tpl == "y" and y >= 2000 and rng.random() < 0.15:  # 两位简写年(08年)
+        return f"{y % 100:02d}年", f"{read_digits(f'{y % 100:02d}')}年", "date"
     if tpl == "ymd":
         return f"{y}年{m}月{d}日", f"{_read_year(y)}年{read_integer(m)}月{read_integer(d)}日", "date"
     if tpl == "ymd_dash":
@@ -123,6 +135,9 @@ def _valid_date(written, ctx):
             out.add(f"{_read_year(y)}年{read_integer(mo)}月{read_integer(d)}{suf}")
         return out
     m = re.fullmatch(r"(\d{3,4})年", w)  # 3 位:公元早期年份(如 976年)
+    if m:
+        return {f"{_read_year(m.group(1))}年", f"{read_integer(int(m.group(1)))}年"}
+    m = re.fullmatch(r"(\d{2})年", w)  # 两位简写年(08年 → 零八年;也可作时长读)
     if m:
         return {f"{_read_year(m.group(1))}年", f"{read_integer(int(m.group(1)))}年"}
     m = re.fullmatch(r"(\d{1,2})月(\d{1,2})([日号])", w)
@@ -154,6 +169,9 @@ def _sample_time(rng):
         w = f"{h}:{mi:02d}:{se:02d}"
         r = f"{_read_hour(h)}点{_read_min(mi)}{_read_sec(se)}"
         return w, r, "time"
+    if mi and rng.random() < 0.12:  # 原文自带「分」:23:59分(span 含分字)
+        w = f"{h}:{mi:02d}分"
+        return w, f"{_read_hour(h)}点{_read_min(mi)}", "time"
     w = f"{h}:{mi:02d}"
     return w, f"{_read_hour(h)}点{_read_min(mi)}", "time"
 
@@ -175,6 +193,8 @@ def _read_sec(se: int) -> str:
 
 
 def _valid_time(written, ctx):
+    if written.endswith("分") and ":" in written:
+        return _valid_time(written[:-1], ctx)
     parts = written.split(":")
     if not all(p.isdigit() for p in parts) or not 2 <= len(parts) <= 3:
         return set()
@@ -247,13 +267,13 @@ def _parse_money(w: str):
 
 def _sample_money(rng):
     r = rng.random()
-    if r < 0.7:  # 主流:人民币/美元(与 v1 分布一致)
+    if r < 0.6:  # 主流:人民币/美元(与 v1 分布一致)
         sym, suffix = rng.choice([("¥", ""), ("", "元"), ("$", ""), ("", "美元")])
-    elif r < 0.85:  # 符号型外币
+    elif r < 0.72:  # 符号型外币
         sym, suffix = rng.choice(["£", "€", "HK$", "JP¥"]), ""
-    elif r < 0.95:  # 代码型外币(30% 带空格/nbsp)
+    elif r < 0.93:  # 代码型外币(半数带空格)
         code = rng.choice(list(_CUR_CODE))
-        sep = rng.choice([" ", " "]) if rng.random() < 0.3 else ""
+        sep = " " if rng.random() < 0.5 else ""
         sym, suffix = code + sep, ""
     else:  # 汉字后缀外币
         sym, suffix = "", rng.choice(["欧元", "日元", "英镑", "港币"])
@@ -325,8 +345,25 @@ _UNIT_READINGS = {
     "V": ["伏特", "伏"], "A": ["安培", "安"], "Ω": ["欧姆", "欧"],
     "W": ["瓦特", "瓦"], "kW": ["千瓦"], "mA": ["毫安"], "mAh": ["毫安时"],
     "Hz": ["赫兹", "赫"], "kHz": ["千赫兹", "千赫"], "MHz": ["兆赫兹", "兆赫"],
-    "lux": ["勒克斯"], "kcal": ["千卡", "大卡"],
+    "lux": ["勒克斯"], "kcal": ["千卡", "大卡"], "kPa": ["千帕", "千帕斯卡"],
+    "°": ["度"],
 }
+
+
+def _parse_degree(written: str):
+    """度分秒(31°14′ / 22°15′0″)→ (度, 分, 秒|None);非该形态返回 None。"""
+    import re
+    m = re.fullmatch(r"(\d{1,3})°(\d{1,2})′(?:(\d{1,2})″)?", written)
+    if not m:
+        return None
+    return int(m.group(1)), int(m.group(2)), (int(m.group(3)) if m.group(3) else None)
+
+
+def _degree_reading(d: int, mi: int, se) -> str:
+    r = f"{read_integer(d)}度{read_integer(mi)}分"
+    if se is not None:
+        r += f"{read_integer(se)}秒"
+    return r
 # 前置模板单位:读法为「模板 format 数字」而非「数字+单位」
 _UNIT_TPL = {"mph": "每小时{}英里", "km/h": "每小时{}公里",
              "m/s": "每秒{}米", "Mbps": "每秒{}兆比特"}
@@ -351,6 +388,11 @@ def _measure_num_ok(num: str) -> bool:
 
 
 def _sample_measure(rng):
+    if rng.random() < 0.06:  # 度分秒(坐标/角度)
+        d, mi = rng.randint(0, 179), rng.randint(0, 59)
+        se = rng.randint(0, 59) if rng.random() < 0.3 else None
+        w = f"{d}°{mi}′" + (f"{se}″" if se is not None else "")
+        return w, _degree_reading(d, mi, se), "measure"
     if rng.random() < 0.1:  # 前置模板单位(速度/网速)
         unit = rng.choice(list(_UNIT_TPL))
         x = str(rng.randint(1, 999))
@@ -369,6 +411,9 @@ def _sample_measure(rng):
 
 
 def _valid_measure(written, ctx):
+    deg = _parse_degree(written)
+    if deg:
+        return {_degree_reading(*deg)}
     for unit in sorted(_UNIT_TPL, key=len, reverse=True):
         if written.endswith(unit):
             num = written[: -len(unit)]
@@ -495,11 +540,20 @@ def _valid_score(written, ctx):
 
 # ---------------- VERSION ----------------
 
+def _ver_seg(s: str) -> str:
+    """版本段 canonical:≥3 位逐位(2023 → 二零二三),短段按数值。"""
+    return read_digits(s) if len(s) >= 3 else read_integer(int(s))
+
+
 def _sample_version(rng):
-    segs = [str(rng.randint(0, 20)) for _ in range(rng.randint(2, 3))]
+    if rng.random() < 0.15:  # 年份式版本(2023.5.1 → 二零二三点五点一)
+        segs = [str(rng.randint(2015, 2026)), str(rng.randint(1, 12))]
+        if rng.random() < 0.6:
+            segs.append(str(rng.randint(0, 28)))
+    else:
+        segs = [str(rng.randint(0, 20)) for _ in range(rng.randint(2, 3))]
     w = ".".join(segs)
-    r = "点".join(read_integer(int(s)) for s in segs)
-    return w, r, "version"
+    return w, "点".join(_ver_seg(s) for s in segs), "version"
 
 
 def _valid_version(written, ctx):
@@ -544,26 +598,60 @@ def _valid_range(written, ctx):
 
 # ---------------- SERIAL ----------------
 
+_PLATE_PROVINCES = "京沪粤川浙苏鲁豫冀晋辽吉黑皖闽赣湘鄂桂琼渝黔滇陕甘青宁新"
+
+
 def _sample_serial(rng):
+    r = rng.random()
+    if r < 0.15:  # 车牌:京A·12345(· 不读)
+        prov = rng.choice(_PLATE_PROVINCES)
+        letter = rng.choice("ABCDEFGHKMNPQRSTXYZ")
+        digits = "".join(rng.choice("0123456789") for _ in range(5))
+        sep = "·" if rng.random() < 0.7 else ""
+        w = f"{prov}{letter}{sep}{digits}"
+        return w, _serial_read(w, False), "serial"
+    if r < 0.4:  # 数字前置(5G)/ 交错(H1N1)
+        if rng.random() < 0.5:
+            w = rng.choice("123456789") + rng.choice(["G", "K", "D", "S", "P"])
+        else:
+            w = (rng.choice("ABCDEFGHKMN") + rng.choice("0123456789")
+                 + rng.choice("KLMNPRSTV") + rng.choice("0123456789"))
+        return w, _serial_read(w, False), "serial"
     letters = "".join(rng.choice("ABCDEFGHKMNPQRSTXYZ") for _ in range(rng.randint(1, 2)))
     digits = "".join(rng.choice("0123456789") for _ in range(rng.randint(2, 5)))
     w = letters + digits
-    return w, letters + read_digits(digits), "serial"
+    return w, _serial_read(w, False), "serial"
+
+
+def _serial_read(written: str, yao: bool) -> str | None:
+    """位置保持式:数字逐位、字母/汉字原样、·- 分隔符静音(5G→五G,H1N1→H一N一)。"""
+    out = []
+    for c in written:
+        if c.isdigit():
+            out.append(read_digits(c, yao=yao))
+        elif c in "·-#":
+            continue
+        elif c.isalpha():
+            out.append(c)
+        else:
+            return None
+    return "".join(out)
 
 
 def _valid_serial(written, ctx):
-    head = "".join(c for c in written if not c.isdigit())
-    digits = "".join(c for c in written if c.isdigit())
-    if not digits:
+    if not any(c.isdigit() for c in written):
         return set()
-    return {head + r for r in digit_string_readings(digits)}
+    return {r for r in (_serial_read(written, False), _serial_read(written, True))
+            if r is not None}
 
 
 # ---------------- render(canonical,与 sampler 产出一致) ----------------
 
 def _render_number(written, ctx):
     if ctx == "code":
-        return read_digits(written) if written.isdigit() else None
+        ok = written and all(c.isdigit() or c in ".-#" for c in written) \
+            and any(c.isdigit() for c in written)
+        return read_digits(written) if ok else None
     if written.startswith("±"):
         return "正负" + read_number(written[1:])
     for unit in ("万", "亿"):
@@ -593,10 +681,15 @@ def _render_date(written, ctx):
     m = re.fullmatch(r"(\d{1,2})/(\d{1,2})", written)
     if m and 1 <= int(m.group(1)) <= 12 and 1 <= int(m.group(2)) <= 31:
         return f"{read_integer(int(m.group(1)))}月{read_integer(int(m.group(2)))}日"
+    m = re.fullmatch(r"(\d{2})年", written)
+    if m:
+        return f"{read_digits(m.group(1))}年"
     return None
 
 
 def _render_time(written, ctx):
+    if written.endswith("分") and ":" in written:
+        return _render_time(written[:-1], ctx)
     parts = written.split(":")
     if not all(p.isdigit() for p in parts) or not 2 <= len(parts) <= 3:
         return None
@@ -611,6 +704,9 @@ def _render_phone(written, ctx):
 
 
 def _render_measure(written, ctx):
+    deg = _parse_degree(written)
+    if deg:
+        return _degree_reading(*deg)
     for unit in sorted(_UNIT_TPL, key=len, reverse=True):
         if written.endswith(unit):
             num = written[: -len(unit)]
@@ -661,7 +757,7 @@ def _render_version(written, ctx):
     segs = written.split(".")
     if not all(s.isdigit() for s in segs) or len(segs) < 2:
         return None
-    return "点".join(read_integer(int(s)) for s in segs)
+    return "点".join(_ver_seg(s) for s in segs)
 
 
 def _render_range(written, ctx):
@@ -680,11 +776,164 @@ def _render_range(written, ctx):
 
 
 def _render_serial(written, ctx):
-    head = "".join(c for c in written if not c.isdigit())
-    digits = "".join(c for c in written if c.isdigit())
-    if not digits or not (head and head.isalpha()):
+    if not any(c.isdigit() for c in written) or not any(c.isalpha() for c in written):
         return None
-    return head + read_digits(digits)
+    return _serial_read(written, yao=False)
+
+
+# ---------------- ROMAN(罗马数字) ----------------
+
+_ROMAN_VALS = [("M", 1000), ("CM", 900), ("D", 500), ("CD", 400), ("C", 100),
+               ("XC", 90), ("L", 50), ("XL", 40), ("X", 10), ("IX", 9),
+               ("V", 5), ("IV", 4), ("I", 1)]
+
+
+def _int_to_roman(n: int) -> str:
+    out = []
+    for sym, val in _ROMAN_VALS:
+        while n >= val:
+            out.append(sym)
+            n -= val
+    return "".join(out)
+
+
+def _roman_to_int(s: str) -> int | None:
+    if not s or any(c not in "MDCLXVI" for c in s):
+        return None
+    i, n = 0, 0
+    for sym, val in _ROMAN_VALS:
+        while s[i:i + len(sym)] == sym:
+            n += val
+            i += len(sym)
+    return n if i == len(s) and s == _int_to_roman(n) else None
+
+
+def _sample_roman(rng):
+    if rng.random() < 0.15:  # 年份:罗马 → 逐位读(MMXXIII年)
+        y = rng.randint(1900, 2026)
+        return _int_to_roman(y), read_digits(str(y)), "roman_year"
+    n = rng.randint(1, 60)
+    return _int_to_roman(n), read_integer(n), "roman"
+
+
+def _valid_roman(written, ctx):
+    n = _roman_to_int(written)
+    if n is None:
+        return set()
+    out = set(integer_readings(n))
+    out |= {"第" + r for r in integer_readings(n)}  # 届/世纪等序数语境(XXIII届→第二十三届)
+    if n >= 1000:  # 年份逐位变体
+        out.add(read_digits(str(n)))
+    return out
+
+
+def _render_roman(written, ctx):
+    n = _roman_to_int(written)
+    if n is None:
+        return None
+    if ctx == "roman_year" and n >= 1000:
+        return read_digits(str(n))
+    return read_integer(n)
+
+
+# ---------------- MATH(简单算式) ----------------
+
+_MATH_OPS = {"+": "加", "-": "减", "×": "乘", "*": "乘", "÷": "除以",
+             "=": "等于", "≈": "约等于"}
+
+
+def _sample_math(rng):
+    kind = rng.choices(["arith", "chain", "pow", "sqrt", "pi"],
+                       [0.4, 0.2, 0.15, 0.15, 0.1])[0]
+    if kind == "arith":
+        a, b = rng.randint(0, 99), rng.randint(1, 99)
+        op = rng.choice(["+", "-", "×", "÷"])
+        if op == "-" and a < b:
+            a, b = b, a  # 结果非负(负号会与减号 token 混淆)
+        c = {"+": a + b, "-": a - b, "×": a * b, "÷": a}[op]
+        if op == "÷":
+            a = b * c  # 整除
+        w = f"{a}{op}{b}={c}"
+        r = f"{read_integer(a)}{_MATH_OPS[op]}{read_integer(b)}等于{read_integer(c)}"
+        return w, r, "math"
+    if kind == "chain":
+        a, b, c = rng.randint(1, 20), rng.randint(1, 9), rng.randint(1, 20)
+        op1, op2 = rng.choice([("+", "+"), ("×", "+"), ("+", "×")])
+        v = eval(f"{a}{op1.replace('×', '*')}{b}{op2.replace('×', '*')}{c}")  # noqa: S307
+        w = f"{a}{op1}{b}{op2}{c}={v}"
+        r = (f"{read_integer(a)}{_MATH_OPS[op1]}{read_integer(b)}"
+             f"{_MATH_OPS[op2]}{read_integer(c)}等于{read_integer(v)}")
+        return w, r, "math"
+    if kind == "pow":
+        a, p = rng.randint(2, 20), rng.choice([2, 3])
+        sup = "²" if p == 2 else "³"
+        w = f"{a}{sup}={a ** p}"
+        pr = "的平方" if p == 2 else "的三次方"
+        return w, f"{read_integer(a)}{pr}等于{read_integer(a ** p)}", "math"
+    if kind == "sqrt":
+        b = rng.randint(2, 30)
+        paren = rng.random() < 0.3
+        x = f"({b * b})" if paren else str(b * b)
+        return f"√{x}={b}", f"根号{read_integer(b * b)}等于{read_integer(b)}", "math"
+    x = f"3.{rng.choice(['14', '1416'])}"
+    return f"π≈{x}", f"圆周率约等于{read_number(x)}", "math"
+
+
+_FULLWIDTH_OPS = str.maketrans("＝＋－＊（）", "=+-*()")
+
+
+def _math_readings(written: str) -> set[str] | None:
+    """算式逐 token 解析 → 读法集合(变体:乘/乘以、的平方/的二次方)。"""
+    import re
+    written = written.translate(_FULLWIDTH_OPS)
+    toks = re.findall(r"\d+(?:\.\d+)?|√|π|²|³|[+\-×*÷=≈()]", written)
+    if not toks or "".join(toks) != written.replace(" ", ""):
+        return None
+    parts: list[list[str]] = []
+    for t in toks:
+        if re.fullmatch(r"\d+(?:\.\d+)?", t):
+            parts.append(sorted(number_readings(t)))
+        elif t == "√":
+            parts.append(["根号"])
+        elif t == "π":
+            parts.append(["圆周率"])
+        elif t == "²":
+            parts.append(["的平方", "的二次方"])
+        elif t == "³":
+            parts.append(["的三次方", "的立方"])
+        elif t in "()":
+            parts.append([""])
+        elif t == "×" or t == "*":
+            parts.append(["乘", "乘以"])
+        else:
+            parts.append([_MATH_OPS[t]])
+    out = {""}
+    for p in parts:
+        out = {a + b for a in out for b in p}
+        if len(out) > 4000:
+            return None
+    return out
+
+
+def _valid_math(written, ctx):
+    return _math_readings(written) or set()
+
+
+def _render_math(written, ctx):
+    import re
+    written = written.translate(_FULLWIDTH_OPS)
+    toks = re.findall(r"\d+(?:\.\d+)?|√|π|²|³|[+\-×*÷=≈()]", written)
+    if not toks or "".join(toks) != written.replace(" ", ""):
+        return None
+    canon = {"√": "根号", "π": "圆周率", "²": "的平方", "³": "的三次方",
+             "(": "", ")": "", "*": "乘", "×": "乘"}
+    out = []
+    for t in toks:
+        if re.fullmatch(r"\d+(?:\.\d+)?", t):
+            out.append(read_number(t))
+        else:
+            out.append(canon.get(t, _MATH_OPS.get(t)))
+    return "".join(out) if all(x is not None for x in out) else None
 
 
 # ---------------- registry ----------------
@@ -702,6 +951,8 @@ _REGISTRY = {
     "VERSION": (_sample_version, _valid_version, _render_version),
     "RANGE": (_sample_range, _valid_range, _render_range),
     "SERIAL": (_sample_serial, _valid_serial, _render_serial),
+    "ROMAN": (_sample_roman, _valid_roman, _render_roman),
+    "MATH": (_sample_math, _valid_math, _render_math),
 }
 
 CLASSES = list(_REGISTRY)

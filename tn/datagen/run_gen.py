@@ -25,7 +25,7 @@ from tn.parser import ParseError, parse_and_apply, render_output
 from tn.verbalizer import is_valid, valid_readings
 
 DIGIT_RE = re.compile(r"[0-90-9]")
-SYMBOL_RE = re.compile(r"[¥$%℃~～£€±½⅓⅔¼¾⅕⅛Ω]")
+SYMBOL_RE = re.compile(r"[¥$%℃~～£€±½⅓⅔¼¾⅕⅛Ω×÷√²³π≈°′″·]")
 HANZI_NUM_RE = re.compile(r"[一二三四五六七八九十百千万亿两零]")
 LATIN_RE = re.compile(r"[A-Za-z]{2,}")
 BOUNDARY_BAD = re.compile(r"[0-9A-Za-z.0-9]")

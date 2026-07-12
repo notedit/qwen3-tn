@@ -15,11 +15,11 @@ from tn.verbalizer import NSWSample, render, sample_nsw
 CLASS_WEIGHTS = {
     "NUMBER": 0.22, "DATE": 0.15, "TIME": 0.12, "MONEY": 0.12, "PHONE": 0.08,
     "MEASURE": 0.08, "PERCENT": 0.06, "FRACTION": 0.03, "SCORE": 0.05,
-    "VERSION": 0.03, "RANGE": 0.04, "SERIAL": 0.02,
+    "VERSION": 0.03, "RANGE": 0.04, "SERIAL": 0.02, "ROMAN": 0.025, "MATH": 0.035,
 }
 
 DOMAINS = ["新闻报道", "日常对话", "客服对话", "小说叙述", "社交媒体帖子",
-           "百科条目", "体育赛事报道", "科技评测"]
+           "百科条目", "体育赛事报道", "科技评测", "法律公文", "教育课堂"]
 LEN_BUCKETS = [(10, 20), (20, 40), (40, 60), (60, 90)]
 
 # 负样本类型及权重(v2:过度触发是 OOD 主要失效模式,负监督多样化)
@@ -42,7 +42,7 @@ LATIN_FRAGS = [
 DISTRACTOR_FRAGS = MODEL_FRAGS + LATIN_FRAGS
 
 CTX_DESC = {
-    "quantity": "数量(按数值读,如 18 读作十八)",
+    "quantity": "数量/数值(按数值读,如 18 读作十八;法律条款如第264条也按数值读作二百六十四)",
     "code": "编号/代码(逐位读,如 368 读作三六八;适用于公交路号、房间号、门牌号、编号、代号、产品代码等)",
     "phone": "电话号码",
     "date": "日期",
@@ -55,6 +55,9 @@ CTX_DESC = {
     "version": "版本号",
     "range": "数值范围(从A到B)",
     "serial": "型号/编号(字母保留,数字逐位读)",
+    "roman": "罗马数字(按数值读,如 VII 读作七,常见于章节/届次/世纪)",
+    "roman_year": "罗马数字年份(逐位读,如 MMXXIII 读作二零二三)",
+    "math": "数学算式(整个算式原样出现,朗读运算符,如 2+3=5 读作二加三等于五)",
 }
 
 
@@ -116,10 +119,27 @@ def build_specs(n: int, seed: int, neg_ratio: float = 0.25,
             specs.append(Spec(sid, "negative", domain, length,
                               neg_type=neg_type, distractors=dis))
         elif r < neg_ratio + pair_ratio and n - len(specs) >= 2:
-            w = str(rng.randint(10, 99999))
-            for ctx in ("code", "quantity"):
+            kind = rng.choices(["num", "slash", "verdate", "score_range", "score_time"],
+                               [0.35, 0.25, 0.15, 0.15, 0.10])[0]
+            if kind == "num":  # 逐位 vs 数值
+                w = str(rng.randint(10, 99999))
+                pair = [("NUMBER", "code"), ("NUMBER", "quantity")]
+            elif kind == "slash":  # 斜杠:月日 vs 分数
+                w = f"{rng.randint(1, 12)}/{rng.randint(2, 28)}"
+                pair = [("DATE", "date"), ("FRACTION", "fraction")]
+            elif kind == "verdate":  # 点分:版本 vs 日期
+                w = f"{rng.randint(2015, 2026)}.{rng.randint(1, 12)}.{rng.randint(1, 28)}"
+                pair = [("VERSION", "version"), ("DATE", "date")]
+            elif kind == "score_range":  # 连字符:比分 vs 区间
+                a = rng.randint(0, 120)
+                w = f"{a}-{a + rng.randint(1, 60)}"
+                pair = [("SCORE", "score"), ("RANGE", "range")]
+            else:  # 冒号:比分 vs 时刻
+                w = f"{rng.randint(0, 23)}:{rng.randint(0, 59):02d}"
+                pair = [("SCORE", "score"), ("TIME", "time")]
+            for cls, ctx in pair:
                 sid = f"s{seed}-{len(specs):07d}"
-                item = NSWSample("NUMBER", ctx, w, render("NUMBER", w, ctx))
+                item = NSWSample(cls, ctx, w, render(cls, w, ctx))
                 specs.append(Spec(sid, "positive", rng.choice(DOMAINS),
                                   rng.choice(LEN_BUCKETS), items=[item]))
         else:
